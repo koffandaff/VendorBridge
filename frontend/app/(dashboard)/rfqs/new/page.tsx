@@ -7,7 +7,7 @@ import { useForm, useFieldArray } from "react-hook-form";
 import type { Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import toast from "react-hot-toast";
+import { showLoading, showModalSuccess, showToastError, closeAlert } from "@/lib/alerts";
 import styles from "./new-rfq.module.css";
 import { createRFQ, fetchVendors, Vendor } from "@/lib/data";
 
@@ -30,6 +30,7 @@ export default function NewRfqPage() {
   const router = useRouter();
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loadingVendors, setLoadingVendors] = useState(true);
+  const [vendorsError, setVendorsError] = useState<string | null>(null);
 
   const {
     register,
@@ -53,18 +54,22 @@ export default function NewRfqPage() {
 
   const selectedVendors = watch("assignedVendors");
 
+  const loadVendors = async () => {
+    setLoadingVendors(true);
+    setVendorsError(null);
+    try {
+      const data = await fetchVendors();
+      // Only show active vendors
+      setVendors(data.filter(v => v.status === "Active"));
+    } catch (error) {
+      console.error("Failed to load vendors", error);
+      setVendorsError("Couldn't load vendors. Check your connection and try again.");
+    } finally {
+      setLoadingVendors(false);
+    }
+  };
+
   useEffect(() => {
-    const loadVendors = async () => {
-      try {
-        const data = await fetchVendors();
-        // Only show active vendors
-        setVendors(data.filter(v => v.status === "Active"));
-      } catch (error) {
-        console.error("Failed to load vendors", error);
-      } finally {
-        setLoadingVendors(false);
-      }
-    };
     loadVendors();
   }, []);
 
@@ -79,6 +84,7 @@ export default function NewRfqPage() {
 
   const onSubmit = async (data: NewRfqFormValues) => {
     try {
+      showLoading("Creating RFQ...");
       await createRFQ({
         title: data.title,
         description: data.details,
@@ -91,10 +97,12 @@ export default function NewRfqPage() {
         })),
         invitedVendorIds: data.assignedVendors,
       });
-      toast.success("RFQ created and sent successfully!");
+      closeAlert();
+      await showModalSuccess("Success", "RFQ created and sent successfully!");
       router.push("/rfqs");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to create RFQ");
+      closeAlert();
+      showToastError(error instanceof Error ? error.message : "Failed to create RFQ");
     }
   };
 
@@ -132,7 +140,7 @@ export default function NewRfqPage() {
             </div>
 
             {/* Deadline */}
-            <div className={styles.formGroup}>
+            <div className={`${styles.formGroup} ${styles.fullWidth}`}>
               <label className={styles.formLabel}>Submission Deadline</label>
               <input
                 type="date"
@@ -156,41 +164,38 @@ export default function NewRfqPage() {
             {/* Items */}
             <div className={`${styles.formGroup} ${styles.fullWidth}`}>
               <label className={styles.formLabel}>Requested Items</label>
-              <p style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>
+              <p className={styles.fieldHint}>
                 Add the items or services you want vendors to quote on.
               </p>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div className={styles.itemsList}>
                 {fields.map((field, index) => (
                   <div
                     key={field.id}
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1.5fr 0.5fr 0.5fr 1fr auto",
-                      gap: "8px",
-                      alignItems: "start",
-                    }}
+                    className={styles.itemRow}
                   >
                     <input
                       type="text"
                       placeholder="Item name"
-                      className={`${styles.formInput} ${errors.items?.[index]?.itemName ? styles.error : ""}`}
+                      className={`${styles.formInput} ${styles.itemName} ${errors.items?.[index]?.itemName ? styles.error : ""}`}
                       {...register(`items.${index}.itemName`)}
                     />
                     <input
                       type="number"
+                      min={1}
+                      step={1}
                       placeholder="Qty"
-                      className={`${styles.formInput} ${errors.items?.[index]?.qty ? styles.error : ""}`}
+                      className={`${styles.formInput} ${styles.itemQty} ${errors.items?.[index]?.qty ? styles.error : ""}`}
                       {...register(`items.${index}.qty`)}
                     />
                     <input
                       type="text"
                       placeholder="Unit"
-                      className={`${styles.formInput} ${errors.items?.[index]?.unit ? styles.error : ""}`}
+                      className={`${styles.formInput} ${styles.itemUnit} ${errors.items?.[index]?.unit ? styles.error : ""}`}
                       {...register(`items.${index}.unit`)}
                     />
                     <select
-                      className={`${styles.formSelect} ${errors.items?.[index]?.itemType ? styles.error : ""}`}
+                      className={`${styles.formSelect} ${styles.itemType} ${errors.items?.[index]?.itemType ? styles.error : ""}`}
                       {...register(`items.${index}.itemType`)}
                     >
                       <option value="PRODUCT">Product</option>
@@ -198,17 +203,10 @@ export default function NewRfqPage() {
                     </select>
                     <button
                       type="button"
+                      className={styles.removeItemButton}
                       onClick={() => remove(index)}
-                      style={{
-                        background: "transparent",
-                        border: "1px solid rgba(239, 68, 68, 0.3)",
-                        color: "#ef4444",
-                        borderRadius: "8px",
-                        padding: "10px",
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                      }}
+                      disabled={isSubmitting}
+                      aria-label={`Remove item ${index + 1}`}
                     >
                       <Trash2 size={16} />
                     </button>
@@ -217,21 +215,9 @@ export default function NewRfqPage() {
                 {errors.items?.root && <span className={styles.formError}>{errors.items.root.message}</span>}
                 <button
                   type="button"
+                  className={styles.addItemButton}
                   onClick={() => append({ itemName: "", qty: 1, unit: "pcs", itemType: "PRODUCT" })}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    background: "rgba(16, 185, 129, 0.1)",
-                    border: "1px dashed rgba(16, 185, 129, 0.4)",
-                    color: "#10b981",
-                    padding: "10px 16px",
-                    borderRadius: "10px",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    alignSelf: "flex-start",
-                  }}
+                  disabled={isSubmitting}
                 >
                   <Plus size={16} /> Add Item
                 </button>
@@ -241,15 +227,26 @@ export default function NewRfqPage() {
             {/* Assign Vendors */}
             <div className={`${styles.formGroup} ${styles.fullWidth}`}>
               <label className={styles.formLabel}>Assign Vendors</label>
-              <p style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>
+              <p className={styles.fieldHint}>
                 Select the active vendors you want to invite to this RFQ.
               </p>
 
               <div className={styles.checkboxGroup}>
                 {loadingVendors ? (
-                  <span style={{ color: "#94a3b8", fontSize: "14px" }}>Loading vendors...</span>
+                  <span className={styles.vendorMessage}>Loading vendors...</span>
+                ) : vendorsError ? (
+                  <div className={styles.vendorErrorBlock}>
+                    <span className={styles.vendorMessage}>{vendorsError}</span>
+                    <button
+                      type="button"
+                      className={styles.retryButton}
+                      onClick={loadVendors}
+                    >
+                      Retry
+                    </button>
+                  </div>
                 ) : vendors.length === 0 ? (
-                  <span style={{ color: "#94a3b8", fontSize: "14px" }}>No active vendors found.</span>
+                  <span className={styles.vendorMessage}>No active vendors found.</span>
                 ) : (
                   vendors.map(vendor => (
                     <label key={vendor.id} className={styles.checkboxItem}>

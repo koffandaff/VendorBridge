@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { User, UserPlus } from "lucide-react";
 import styles from "./register.module.css";
-import toast from "react-hot-toast";
+import { showLoading, showModalSuccess, showToastError, closeAlert } from "@/lib/alerts";
 import { registerUser } from "@/lib/data";
 
 const ROLE_MAP: Record<string, "ADMIN" | "PROCUREMENT_OFFICER" | "APPROVER" | "VENDOR"> = {
@@ -37,6 +37,7 @@ export default function RegisterPage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    showLoading("Registering user...");
 
     try {
       await registerUser({
@@ -45,7 +46,8 @@ export default function RegisterPage() {
         phone: formData.phone || undefined,
         role: ROLE_MAP[formData.jobRole] ?? "VENDOR",
       });
-      toast.success("User successfully registered!");
+      closeAlert();
+      await showModalSuccess("Success", "User successfully registered!");
       setFormData({
         firstName: "",
         lastName: "",
@@ -58,7 +60,8 @@ export default function RegisterPage() {
       });
       setProfileImage(null);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to register user");
+      closeAlert();
+      showToastError(error instanceof Error ? error.message : "Failed to register user");
     } finally {
       setIsLoading(false);
     }

@@ -139,19 +139,20 @@ function mapVendor(vendor: VendorDto): Vendor {
 }
 
 function mapRfq(rfq: RFQDto): RFQ {
+  const items = rfq.items ?? [];
   return {
     id: rfq.id,
     number: rfq.rfqNumber,
     title: rfq.title,
     description: rfq.description,
-    category: ITEM_TYPE_LABEL[rfq.items?.[0]?.itemType ?? "PRODUCT"] ?? "Product",
+    category: ITEM_TYPE_LABEL[items[0]?.itemType ?? "PRODUCT"] ?? "Product",
     deadline: formatDate(rfq.deadline),
     vendorsAssignedCount: rfq._count?.invitedVendors ?? rfq.invitedVendors?.length ?? 0,
     quotesReceivedCount:
       rfq._count?.quotations ?? rfq.quotations?.filter((q) => q.status !== "DRAFT").length ?? 0,
     status: RFQ_STATUS_LABEL[rfq.status] ?? "Draft",
     rawStatus: rfq.status,
-    items: (rfq.items ?? []).map((item) => ({
+    items: items.map((item) => ({
       id: item.id,
       item: item.name,
       qty: toNumber(item.quantity),
