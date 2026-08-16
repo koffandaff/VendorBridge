@@ -15,10 +15,10 @@ export function validateRequest(schemas: RequestValidationSchemas) {
         req.body = schemas.body.parse(req.body);
       }
       if (schemas.query) {
-        req.query = schemas.query.parse(req.query) as typeof req.query;
+        defineRequestProperty(req, "query", schemas.query.parse(req.query));
       }
       if (schemas.params) {
-        req.params = schemas.params.parse(req.params) as typeof req.params;
+        defineRequestProperty(req, "params", schemas.params.parse(req.params));
       }
       next();
     } catch (error) {
@@ -33,4 +33,19 @@ export function validateRequest(schemas: RequestValidationSchemas) {
       }
     }
   };
+}
+
+// Express 5 defines req.query (and possibly req.params for some routers) as
+// getter-only properties, so plain assignment throws in strict mode.
+function defineRequestProperty(
+  req: Request,
+  key: "query" | "params",
+  value: unknown
+): void {
+  Object.defineProperty(req, key, {
+    value,
+    configurable: true,
+    enumerable: true,
+    writable: true,
+  });
 }
