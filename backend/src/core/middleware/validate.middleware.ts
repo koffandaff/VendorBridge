@@ -16,36 +16,20 @@ export function validateRequest(schemas: RequestValidationSchemas) {
         req.body = sanitizeInput(req.body);
       }
       if (req.query) {
-        const sanitizedQuery = sanitizeInput(req.query);
-        for (const key of Object.keys(req.query)) {
-          delete (req.query as Record<string, unknown>)[key];
-        }
-        Object.assign(req.query, sanitizedQuery);
+        defineRequestProperty(req, "query", sanitizeInput(req.query));
       }
       if (req.params) {
-        const sanitizedParams = sanitizeInput(req.params);
-        for (const key of Object.keys(req.params)) {
-          delete (req.params as Record<string, unknown>)[key];
-        }
-        Object.assign(req.params, sanitizedParams);
+        defineRequestProperty(req, "params", sanitizeInput(req.params));
       }
 
       if (schemas.body) {
         req.body = schemas.body.parse(req.body);
       }
       if (schemas.query) {
-        const parsedQuery = schemas.query.parse(req.query) as Record<string, unknown>;
-        for (const key of Object.keys(req.query)) {
-          delete (req.query as Record<string, unknown>)[key];
-        }
-        Object.assign(req.query, parsedQuery);
+        defineRequestProperty(req, "query", schemas.query.parse(req.query));
       }
       if (schemas.params) {
-        const parsedParams = schemas.params.parse(req.params) as Record<string, unknown>;
-        for (const key of Object.keys(req.params)) {
-          delete (req.params as Record<string, unknown>)[key];
-        }
-        Object.assign(req.params, parsedParams);
+        defineRequestProperty(req, "params", schemas.params.parse(req.params));
       }
       next();
     } catch (error) {
@@ -60,4 +44,18 @@ export function validateRequest(schemas: RequestValidationSchemas) {
       }
     }
   };
+}
+
+// Express 5 defines req.query (and possibly req.params) as getter-only properties.
+function defineRequestProperty(
+  req: Request,
+  key: "query" | "params",
+  value: unknown
+): void {
+  Object.defineProperty(req, key, {
+    value,
+    configurable: true,
+    enumerable: true,
+    writable: true,
+  });
 }

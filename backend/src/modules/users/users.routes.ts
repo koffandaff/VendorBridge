@@ -1,21 +1,21 @@
 import { Router } from "express";
-import { UserController } from "./user.controller.js";
 import { authenticate } from "../../core/auth/guards.js";
 import { requirePermission } from "../../core/rbac/guards.js";
 import { validateRequest } from "../../core/middleware/validate.middleware.js";
+import { UserController } from "./users.controller.js";
 import {
   createUserSchema,
+  resetPasswordSchema,
+  userIdParamSchema,
+  userQuerySchema,
   updateUserSchema,
   updateUserStatusSchema,
-  resetPasswordSchema,
-  userQuerySchema,
-  uuidParamSchema,
-} from "./user.schema.js";
+} from "./users.schema.js";
 
-export const userRouter: Router = Router();
+export const usersRouter: Router = Router();
 const controller = new UserController();
 
-userRouter.post(
+usersRouter.post(
   "/",
   authenticate,
   requirePermission("users:manage"),
@@ -23,7 +23,7 @@ userRouter.post(
   controller.createUser
 );
 
-userRouter.get(
+usersRouter.get(
   "/",
   authenticate,
   requirePermission("users:manage"),
@@ -31,42 +31,50 @@ userRouter.get(
   controller.listUsers
 );
 
-userRouter.get(
+usersRouter.get(
   "/:id",
   authenticate,
   requirePermission("users:manage"),
-  validateRequest({ params: uuidParamSchema }),
+  validateRequest({ params: userIdParamSchema }),
   controller.getUserById
 );
 
-userRouter.put(
+usersRouter.patch(
   "/:id",
   authenticate,
   requirePermission("users:manage"),
-  validateRequest({ params: uuidParamSchema, body: updateUserSchema }),
+  validateRequest({ params: userIdParamSchema, body: updateUserSchema }),
   controller.updateUser
 );
 
-userRouter.patch(
+usersRouter.patch(
   "/:id/status",
   authenticate,
   requirePermission("users:manage"),
-  validateRequest({ params: uuidParamSchema, body: updateUserStatusSchema }),
+  validateRequest({ params: userIdParamSchema, body: updateUserStatusSchema }),
   controller.updateUserStatus
 );
 
-userRouter.patch(
+usersRouter.post(
+  "/:id/resend-invite",
+  authenticate,
+  requirePermission("users:manage"),
+  validateRequest({ params: userIdParamSchema }),
+  controller.resendInvite
+);
+
+usersRouter.patch(
   "/:id/password",
   authenticate,
   requirePermission("users:manage"),
-  validateRequest({ params: uuidParamSchema, body: resetPasswordSchema }),
+  validateRequest({ params: userIdParamSchema, body: resetPasswordSchema }),
   controller.resetPassword
 );
 
-userRouter.delete(
+usersRouter.delete(
   "/:id",
   authenticate,
   requirePermission("users:manage"),
-  validateRequest({ params: uuidParamSchema }),
+  validateRequest({ params: userIdParamSchema }),
   controller.softDeleteUser
 );

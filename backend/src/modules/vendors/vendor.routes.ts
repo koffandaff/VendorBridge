@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { VendorController } from "./vendor.controller.js";
 import { authenticate } from "../../core/auth/guards.js";
 import { requirePermission } from "../../core/rbac/guards.js";
+import { VendorController } from "./vendor.controller.js";
 import { validateRequest } from "../../core/middleware/validate.middleware.js";
 import {
   createVendorCategorySchema,
@@ -22,7 +22,7 @@ export const vendorRouter: Router = Router();
 const controller = new VendorController();
 
 // -----------------------------------------------------------------------------
-// Vendor Category Routes (Requires authenticate & vendors:manage / procurement:view)
+// Vendor Category Routes
 // -----------------------------------------------------------------------------
 vendorRouter.post(
   "/categories",
