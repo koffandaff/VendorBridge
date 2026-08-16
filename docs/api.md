@@ -44,6 +44,44 @@
 | `PUT`    | `/api/v1/vendors/:vendorId/contacts/:id`   | Update a vendor contact                  |
 | `DELETE` | `/api/v1/vendors/:vendorId/contacts/:id`   | Delete a vendor contact                  |
 
+### RFQs (`/api/v1/rfqs`)
+
+| Method   | Path                | Description                                                            |
+| -------- | ------------------- | ---------------------------------------------------------------------- |
+| `POST`   | `/api/v1/rfqs`      | Create an RFQ (DRAFT) with items and invited vendors; number auto-generated (`RFQ-YYYY-0001`) |
+| `GET`    | `/api/v1/rfqs`      | List RFQs with search, status filter, pagination                       |
+| `GET`    | `/api/v1/rfqs/:id`  | Get RFQ details with items, invited vendors, quotations                |
+| `PUT`    | `/api/v1/rfqs/:id`  | Update RFQ metadata/items/invited vendors (DRAFT only)                 |
+| `PATCH`  | `/api/v1/rfqs/:id/status` | Transition status (DRAFT→OPEN/CANCELLED, OPEN→CLOSED/CANCELLED)  |
+
+### Quotations (`/api/v1/quotations`)
+
+| Method   | Path                          | Description                                                    |
+| -------- | ----------------------------- | -------------------------------------------------------------- |
+| `GET`    | `/api/v1/quotations`          | List quotations (filter by `rfqId`, `vendorId`, `status`)       |
+| `GET`    | `/api/v1/quotations/compare?rfqId=:id` | Compare quotations for an RFQ (sorted by total, lowest first) |
+| `GET`    | `/api/v1/quotations/:id`      | Get quotation details with vendor, RFQ, and items               |
+| `PATCH`  | `/api/v1/quotations/:id/select` | Mark quotation SELECTED (from SUBMITTED/UNDER_REVIEW)         |
+| `PATCH`  | `/api/v1/quotations/:id/reject` | Mark quotation REJECTED (from SUBMITTED/UNDER_REVIEW)         |
+
+### Purchase Orders (`/api/v1/purchase-orders`)
+
+| Method   | Path                          | Description                                                    |
+| -------- | ----------------------------- | -------------------------------------------------------------- |
+| `POST`   | `/api/v1/purchase-orders`     | Generate a PO from a SELECTED quotation (APPROVED, number auto-generated `PO-YYYY-0001`) |
+| `GET`    | `/api/v1/purchase-orders`     | List POs with status/vendor filter, search, pagination          |
+| `GET`    | `/api/v1/purchase-orders/:id` | Get PO details with items, vendor, quotation, invoice           |
+| `PATCH`  | `/api/v1/purchase-orders/:id/status` | Transition PO status (APPROVED→SENT→ACKNOWLEDGED→PARTIALLY_RECEIVED→COMPLETED, →CANCELLED) |
+
+### Invoices (`/api/v1/invoices`)
+
+| Method   | Path                     | Description                                                    |
+| -------- | ------------------------ | -------------------------------------------------------------- |
+| `POST`   | `/api/v1/invoices`       | Generate an invoice from a PO (ISSUED, number auto-generated `INV-YYYY-0001`) |
+| `GET`    | `/api/v1/invoices`       | List invoices with status/vendor filter, search, pagination    |
+| `GET`    | `/api/v1/invoices/:id`   | Get invoice details with items, vendor, purchase order         |
+| `PATCH`  | `/api/v1/invoices/:id/status` | Transition invoice status (ISSUED→SENT→PAID, →CANCELLED)  |
+
 ## Architecture & Conventions
 
 - Each feature owns its routes: `backend/src/modules/<feature>/<feature>.routes.ts`.
