@@ -16,6 +16,7 @@ out/
 # Logs
 logs/
 *.log
+*.log.err
 npm-debug.log*
 
 # Tests / coverage
