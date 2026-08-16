@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import styles from "./login.module.css";
 import { useAuth } from "@/lib/AuthContext";
+import { showLoading, showModalSuccess, closeAlert } from "@/lib/alerts";
 import { ApiError } from "@/lib/api";
 
 const DEMO_ACCOUNTS = [
@@ -41,15 +42,20 @@ export default function LoginPage() {
 
     setIsLoading(true);
     setErrors({});
+    showLoading("Authenticating...");
 
     try {
       await login(email.trim(), password);
+      closeAlert();
+      await showModalSuccess("Welcome Back!", "Login successful.");
     } catch (error) {
+      closeAlert();
       if (error instanceof ApiError) {
         setErrors({ form: error.message });
       } else {
         setErrors({ form: "Unable to sign in. Please try again." });
       }
+    } finally {
       setIsLoading(false);
     }
   };

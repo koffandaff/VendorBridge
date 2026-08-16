@@ -7,7 +7,7 @@ import { useForm, useFieldArray, Controller } from "react-hook-form";
 import type { Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import toast from "react-hot-toast";
+import { showLoading, showModalSuccess, showToastError, closeAlert } from "@/lib/alerts";
 import styles from "./quote-page.module.css";
 import { createQuotation, fetchRFQById, RFQ, RFQItem } from "@/lib/data";
 
@@ -113,6 +113,7 @@ export default function SubmitQuotationPage() {
 
   const onSubmit = async (data: QuoteFormValues, isDraft: boolean) => {
     try {
+      showLoading(isDraft ? "Saving draft..." : "Submitting quotation...");
       await createQuotation({
         rfqId,
         items: data.items.map((item) => ({
@@ -124,10 +125,12 @@ export default function SubmitQuotationPage() {
         notes: data.notes,
         isDraft,
       });
-      toast.success(isDraft ? "Draft saved successfully!" : "Quotation submitted successfully!");
+      closeAlert();
+      await showModalSuccess("Success", isDraft ? "Draft saved successfully!" : "Quotation submitted successfully!");
       router.push("/quotations");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to submit quotation");
+      closeAlert();
+      showToastError(error instanceof Error ? error.message : "Failed to submit quotation");
     }
   };
 

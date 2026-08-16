@@ -7,7 +7,7 @@ import { useForm, useFieldArray } from "react-hook-form";
 import type { Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import toast from "react-hot-toast";
+import { showLoading, showModalSuccess, showToastError, closeAlert } from "@/lib/alerts";
 import styles from "./new-rfq.module.css";
 import { createRFQ, fetchVendors, Vendor } from "@/lib/data";
 
@@ -79,6 +79,7 @@ export default function NewRfqPage() {
 
   const onSubmit = async (data: NewRfqFormValues) => {
     try {
+      showLoading("Creating RFQ...");
       await createRFQ({
         title: data.title,
         description: data.details,
@@ -91,10 +92,12 @@ export default function NewRfqPage() {
         })),
         invitedVendorIds: data.assignedVendors,
       });
-      toast.success("RFQ created and sent successfully!");
+      closeAlert();
+      await showModalSuccess("Success", "RFQ created and sent successfully!");
       router.push("/rfqs");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to create RFQ");
+      closeAlert();
+      showToastError(error instanceof Error ? error.message : "Failed to create RFQ");
     }
   };
 

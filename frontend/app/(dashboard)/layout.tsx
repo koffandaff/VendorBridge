@@ -24,7 +24,7 @@ import styles from "./dashboard.module.css";
 import ProtectedRoute from "@/components/shared/ProtectedRoute";
 import NotificationBell from "@/components/shared/NotificationBell";
 import { useAuth } from "@/lib/AuthContext";
-import { Toaster } from "react-hot-toast";
+
 
 const NAV_LINKS = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -163,7 +163,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {/* Content */}
           <div className={styles.content}>
             {children}
-            <Toaster position="top-right" toastOptions={{ style: { background: '#1e293b', color: '#fff', border: '1px solid rgba(255,255,255,0.1)' } }} />
           </div>
         </main>
       </div>

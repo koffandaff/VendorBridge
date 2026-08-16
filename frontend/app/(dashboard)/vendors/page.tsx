@@ -9,7 +9,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
-import toast from "react-hot-toast";
+import { showLoading, showModalSuccess, showToastError, closeAlert } from "@/lib/alerts";
 
 type FilterTab = "All" | "Active" | "Pending" | "Blocked";
 
@@ -64,6 +64,7 @@ export default function VendorsPage() {
 
   const onSubmit = async (data: VendorFormValues) => {
     try {
+      showLoading("Adding vendor...");
       await createVendor({
         name: data.name,
         categoryId: data.categoryId,
@@ -72,12 +73,14 @@ export default function VendorsPage() {
         gstNumber: data.gstNumber,
         address: data.address,
       });
-      toast.success("Vendor added successfully!");
+      closeAlert();
+      await showModalSuccess("Success", "Vendor added successfully!");
       reset();
       setIsModalOpen(false);
       loadVendors().catch(() => undefined);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to add vendor");
+      closeAlert();
+      showToastError(error instanceof Error ? error.message : "Failed to add vendor");
     }
   };
 

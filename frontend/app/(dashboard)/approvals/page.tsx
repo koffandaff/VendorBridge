@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { CheckCircle2, Circle, Clock, Star, ArrowLeft, Inbox } from "lucide-react";
 import { useRouter } from "next/navigation";
-import toast from "react-hot-toast";
+import { showLoading, showModalSuccess, showModalError, showToastError, closeAlert } from "@/lib/alerts";
 import styles from "./approvals.module.css";
 
 import { fetchQuotations, rejectQuotation, selectQuotation, Quotation } from "@/lib/data";
@@ -128,23 +128,26 @@ export default function ApprovalWorkflowPage() {
 
   const handleAction = async (action: "approve" | "reject") => {
     if (action === "reject" && !remarks.trim()) {
-      toast.error("Remarks are required to reject an approval.");
+      showToastError("Remarks are required to reject an approval.");
       return;
     }
 
     setIsSubmitting(true);
-
     try {
+      showLoading(action === "approve" ? "Approving..." : "Rejecting...");
       if (action === "approve") {
         await selectQuotation(quote.id);
-        toast.success("Quotation approved successfully!");
+        closeAlert();
+        await showModalSuccess("Success", "Quotation approved successfully!");
       } else {
         await rejectQuotation(quote.id);
-        toast.error("Quotation rejected.");
+        closeAlert();
+        await showModalError("Rejected", "Quotation rejected.");
       }
       await loadPending();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to process approval");
+      closeAlert();
+      showToastError(error instanceof Error ? error.message : "Failed to process approval");
     } finally {
       setIsSubmitting(false);
     }

@@ -6,7 +6,7 @@ import { downloadInvoicePdf, fetchInvoiceById, markInvoicePaid, sendInvoiceEmail
 import type { InvoiceDto } from "@/lib/types";
 import { formatCurrency, formatDate, toNumber } from "@/lib/format";
 import styles from "./invoice.module.css";
-import toast from "react-hot-toast";
+import { showLoading, showModalSuccess, showToastError, closeAlert } from "@/lib/alerts";
 
 export default function InvoiceDetailPage() {
   const params = useParams();
@@ -39,12 +39,15 @@ export default function InvoiceDetailPage() {
 
   const handleMarkPaid = async () => {
     setActionLoading(true);
+    showLoading("Processing payment...");
     try {
       await markInvoicePaid(invoiceId);
-      toast.success("Payment marked as paid!");
+      closeAlert();
+      await showModalSuccess("Success", "Payment marked as paid!");
       await loadInvoice();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to mark invoice as paid");
+      closeAlert();
+      showToastError(error instanceof Error ? error.message : "Failed to mark invoice as paid");
     } finally {
       setActionLoading(false);
     }
@@ -53,11 +56,14 @@ export default function InvoiceDetailPage() {
   const handleDownloadPdf = async () => {
     if (!invoice) return;
     setPdfLoading(true);
+    showLoading("Downloading PDF...");
     try {
       await downloadInvoicePdf(invoice.id, invoice.invoiceNumber);
-      toast.success("Invoice PDF downloaded");
+      closeAlert();
+      await showModalSuccess("Success", "Invoice PDF downloaded");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to download PDF");
+      closeAlert();
+      showToastError(error instanceof Error ? error.message : "Failed to download PDF");
     } finally {
       setPdfLoading(false);
     }
@@ -65,12 +71,15 @@ export default function InvoiceDetailPage() {
 
   const handleEmailInvoice = async () => {
     setEmailLoading(true);
+    showLoading("Sending email...");
     try {
       const updated = await sendInvoiceEmail(invoiceId);
-      toast.success(`Invoice emailed to ${updated.vendor?.name ?? "vendor"}`);
+      closeAlert();
+      await showModalSuccess("Success", `Invoice emailed to ${updated.vendor?.name ?? "vendor"}`);
       await loadInvoice();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to send invoice email");
+      closeAlert();
+      showToastError(error instanceof Error ? error.message : "Failed to send invoice email");
     } finally {
       setEmailLoading(false);
     }
