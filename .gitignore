@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+.next/
+out/
+*.tsbuildinfo
+
+# Environment files - never commit real secrets.
+# Example files (.env.example) are committed on purpose.
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Tests / coverage
+coverage/
+
+# OS
+.DS_Store
+Thumbs.db

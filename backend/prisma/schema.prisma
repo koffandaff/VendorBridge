@@ -1,0 +1,11 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// The schema is intentionally empty. No models exist yet:
+// the database design is a separate, deliberate step (see docs/database.md).
