@@ -11,6 +11,10 @@ import { requestIdMiddleware } from "./core/middleware/request-id.js";
 import { authRouter } from "./modules/auth/index.js";
 import { vendorRouter } from "./modules/vendors/index.js";
 import { userRouter } from "./modules/users/index.js";
+import { rfqRouter } from "./modules/rfqs/index.js";
+import { quotationRouter } from "./modules/quotations/index.js";
+import { purchaseOrderRouter } from "./modules/purchase-orders/index.js";
+import { invoiceRouter } from "./modules/invoices/index.js";
 import { prisma } from "./shared/prisma.js";
 
 export const app = express();
@@ -44,6 +48,12 @@ app.get("/health", async (_req, res) => {
 app.use(`${API_PREFIX}/auth`, authRouter);
 app.use(`${API_PREFIX}/vendors`, vendorRouter);
 app.use(`${API_PREFIX}/users`, userRouter);
+
+// Procurement routes
+app.use(`${API_PREFIX}/rfqs`, rfqRouter);
+app.use(`${API_PREFIX}/quotations`, quotationRouter);
+app.use(`${API_PREFIX}/purchase-orders`, purchaseOrderRouter);
+app.use(`${API_PREFIX}/invoices`, invoiceRouter);
 
 // 404 Handler
 app.use((_req, _res, next) => {
