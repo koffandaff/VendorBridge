@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Send, XCircle } from "lucide-react";
 import { fetchRFQById, updateRfqStatus, RFQ } from "@/lib/data";
-import toast from "react-hot-toast";
+import { showLoading, showModalSuccess, showToastError, closeAlert } from "@/lib/alerts";
 
 export default function RFQViewPage() {
   const router = useRouter();
@@ -34,23 +34,29 @@ export default function RFQViewPage() {
 
   const handleOpen = async () => {
     if (!rfq) return;
+    showLoading("Opening RFQ...");
     try {
       await updateRfqStatus(rfq.id, "OPEN");
-      toast.success(`RFQ ${rfq.number} opened for quotes`);
+      closeAlert();
+      await showModalSuccess(`RFQ ${rfq.number} opened for quotes`);
       await loadRfq();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to open RFQ");
+      closeAlert();
+      showToastError(error instanceof Error ? error.message : "Failed to open RFQ");
     }
   };
 
   const handleClose = async () => {
     if (!rfq) return;
+    showLoading("Closing RFQ...");
     try {
       await updateRfqStatus(rfq.id, "CLOSED");
-      toast.success(`RFQ ${rfq.number} closed`);
+      closeAlert();
+      await showModalSuccess(`RFQ ${rfq.number} closed`);
       await loadRfq();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to close RFQ");
+      closeAlert();
+      showToastError(error instanceof Error ? error.message : "Failed to close RFQ");
     }
   };
 

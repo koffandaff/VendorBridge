@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, FileCheck, XCircle, FileText } from "lucide-react";
 import { fetchQuotationById, rejectQuotation, selectQuotation, Quotation } from "@/lib/data";
 import { formatCurrency } from "@/lib/format";
-import toast from "react-hot-toast";
+import { showLoading, showModalSuccess, showToastError, closeAlert } from "@/lib/alerts";
 
 export default function QuotationReviewPage() {
   const router = useRouter();
@@ -36,12 +36,15 @@ export default function QuotationReviewPage() {
 
   const handleAccept = async () => {
     setActionLoading(true);
+    showLoading("Accepting quotation...");
     try {
       await selectQuotation(quoteId);
-      toast.success("Quotation accepted!");
+      closeAlert();
+      await showModalSuccess("Quotation accepted!");
       await loadQuote();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to accept quotation");
+      closeAlert();
+      showToastError(error instanceof Error ? error.message : "Failed to accept quotation");
     } finally {
       setActionLoading(false);
     }
@@ -49,12 +52,15 @@ export default function QuotationReviewPage() {
 
   const handleReject = async () => {
     setActionLoading(true);
+    showLoading("Rejecting quotation...");
     try {
       await rejectQuotation(quoteId);
-      toast.error("Quotation rejected.");
+      closeAlert();
+      showToastError("Quotation rejected."); // Using toast error for rejection might be okay, or showModalError. Let's use showModalSuccess with a title or just showToastError like original toast.error
       await loadQuote();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to reject quotation");
+      closeAlert();
+      showToastError(error instanceof Error ? error.message : "Failed to reject quotation");
     } finally {
       setActionLoading(false);
     }
