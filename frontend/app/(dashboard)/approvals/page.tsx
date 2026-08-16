@@ -6,15 +6,17 @@ import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import styles from "./approvals.module.css";
 
-// Dummy data defined directly for the approval workflow demo
-const APPROVAL_DATA = {
-  rfqTitle: "Office Furniture Q2",
-  vendorName: "Infra Supplies",
-  totalAmount: 185400,
-  currency: "₹",
+import { fetchQuotations, Quotation } from "@/lib/data";
+
+// Generate approval steps dynamically
+const generateApprovalData = (quote: Quotation) => ({
+  rfqTitle: quote.rfqTitle,
+  vendorName: quote.vendorName,
+  totalAmount: quote.grandTotal,
+  currency: "$",
   deliveryDays: 14,
   vendorRating: 4.8,
-  currentStepIndex: 2, // 0-indexed: 0=Submitted, 1=L1 Review, 2=L2 Approval, 3=Generate PO
+  currentStepIndex: quote.status === "Accepted" ? 3 : quote.status === "Pending Review" ? 1 : 4,
   steps: [
     { label: "Submitted" },
     { label: "L1 Review" },
@@ -26,16 +28,16 @@ const APPROVAL_DATA = {
       id: "a1", 
       name: "Ramesh Kumar", 
       role: "Procurement Manager (L1)", 
-      status: "completed", 
-      statusText: "Approved on May 20, 10:32 AM",
+      status: quote.status === "Accepted" ? "completed" : "current", 
+      statusText: quote.status === "Accepted" ? "Approved" : "Pending Review",
       initials: "RK"
     },
     { 
       id: "a2", 
       name: "Sarah Jenkins", 
       role: "Finance Director (L2)", 
-      status: "current", 
-      statusText: "Pending — Assigned May 21",
+      status: quote.status === "Accepted" ? "completed" : "future", 
+      statusText: quote.status === "Accepted" ? "Approved" : "Waiting on L1",
       initials: "SJ"
     },
     { 
@@ -43,16 +45,29 @@ const APPROVAL_DATA = {
       name: "System", 
       role: "Automated PO Generation", 
       status: "future", 
-      statusText: "Waiting on L2 Approval",
+      statusText: "Waiting on Approvals",
       initials: "SYS"
     }
   ]
-};
+});
 
 export default function ApprovalWorkflowPage() {
   const router = useRouter();
   const [remarks, setRemarks] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [quote, setQuote] = React.useState<Quotation | null>(null);
+
+  React.useEffect(() => {
+    fetchQuotations().then(data => {
+      // Find a pending quote to display
+      const pendingQuote = data.find(q => q.status === "Pending Review") || data[0];
+      setQuote(pendingQuote);
+    });
+  }, []);
+
+  if (!quote) return <div style={{ color: "white", padding: 40 }}>Loading approvals...</div>;
+
+  const APPROVAL_DATA = generateApprovalData(quote);
 
   const handleAction = async (action: "approve" | "reject") => {
     if (action === "reject" && !remarks.trim()) {
