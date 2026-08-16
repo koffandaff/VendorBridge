@@ -7,10 +7,14 @@ import type { InvoiceDto } from "@/lib/types";
 import { formatCurrency, formatDate, toNumber } from "@/lib/format";
 import styles from "./invoice.module.css";
 import { showLoading, showModalSuccess, showToastError, closeAlert } from "@/lib/alerts";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function InvoiceDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth();
+  const isProcurementStaff =
+    user?.role === "Admin" || user?.role === "Procurement Officer";
   const invoiceId = params.id as string;
 
   const [invoice, setInvoice] = useState<InvoiceDto | null>(null);
@@ -142,7 +146,7 @@ export default function InvoiceDetailPage() {
           <button className={styles.actionBtn} onClick={() => window.print()}>
             Print
           </button>
-          {(invoice.status === "ISSUED" || invoice.status === "SENT") && (
+          {isProcurementStaff && (invoice.status === "ISSUED" || invoice.status === "SENT") && (
             <button
               className={styles.actionBtn}
               onClick={handleEmailInvoice}
@@ -247,7 +251,7 @@ export default function InvoiceDetailPage() {
       {/* Footer */}
       <div className={styles.footer}>
         <span>status: <span className={styles.statusBadge}>{invoice.status}</span></span>
-        {invoice.status !== "PAID" && invoice.status !== "CANCELLED" && (
+        {isProcurementStaff && invoice.status !== "PAID" && invoice.status !== "CANCELLED" && (
           <button
             className={styles.markPaid}
             style={{ background: "transparent", border: "none", padding: 0 }}
