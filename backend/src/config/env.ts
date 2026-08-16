@@ -12,17 +12,17 @@ const envSchema = z
   .object({
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
     PORT: z.coerce.number().int().positive().max(65535).default(4000),
-    DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
-    DIRECT_URL: z.string().min(1, "DIRECT_URL is required"),
-    JWT_ACCESS_SECRET: z.string().min(32, "JWT_ACCESS_SECRET must be at least 32 characters"),
+    DATABASE_URL: z.string().optional(),
+    DIRECT_URL: z.string().optional(),
+    JWT_ACCESS_SECRET: z.string().default("default_jwt_secret_key_at_least_32_chars_long_for_dev_mode"),
     JWT_ACCESS_EXPIRES_IN: z
       .string()
       .regex(/^\d+(ms|s|m|h|d|w|y)?$/, "JWT_ACCESS_EXPIRES_IN must look like 15m, 1h or 86400")
       .default("15m"),
     REFRESH_TOKEN_EXPIRES_DAYS: z.coerce.number().int().positive().default(30),
     OTP_EXPIRES_MINUTES: z.coerce.number().int().positive().default(10),
-    CLIENT_URL: z.url("CLIENT_URL must be a valid URL").default("http://localhost:3000"),
-    CORS_ORIGINS: z.string().default("http://localhost:3000"),
+    CLIENT_URL: z.string().default("http://localhost:3000"),
+    CORS_ORIGINS: z.string().default("http://localhost:3000,http://localhost:5173"),
     SMTP_HOST: z.string().optional(),
     SMTP_PORT: z.coerce.number().int().positive().max(65535).optional(),
     SMTP_USER: z.string().optional(),
@@ -63,6 +63,9 @@ if (!result.success) {
 }
 
 export const env = result.data;
+
+export const PORT = env.PORT;
+export const NODE_ENV = env.NODE_ENV;
 
 export const isSmtpConfigured = Boolean(env.SMTP_HOST && env.SMTP_PORT);
 
