@@ -11,6 +11,7 @@ import { acknowledgePurchaseOrder, createInvoice, fetchPurchaseOrders, updatePur
 import type { PurchaseOrderDto } from "@/lib/types";
 import { useAuth } from "@/lib/AuthContext";
 import { addDays, formatCurrency, formatDate, toIsoDate } from "@/lib/format";
+import { PageSkeleton, ToolbarSkeleton, TableSkeleton } from "@/components/ui/Skeleton";
 
 type FilterTab = "All" | "Draft" | "Pending Approval" | "Approved" | "Completed" | "Cancelled";
 
@@ -156,16 +157,10 @@ export default function PurchaseOrdersPage() {
 
   if (loading) {
     return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", minHeight: "300px" }}>
-        <div style={{
-          width: "40px",
-          height: "40px",
-          border: "3px solid rgba(255, 255, 255, 0.1)",
-          borderRadius: "50%",
-          borderTopColor: "#10b981",
-          animation: "spin 1s ease-in-out infinite"
-        }}></div>
-      </div>
+      <PageSkeleton>
+        <ToolbarSkeleton />
+        <TableSkeleton rows={6} columns={7} />
+      </PageSkeleton>
     );
   }
 
