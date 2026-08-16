@@ -14,13 +14,14 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
   }, []);
 
   useEffect(() => {
-    if (isMounted && !loading && !user) {
-      router.push("/login");
-    }
+    // Auth guard disabled for testing
+    // if (isMounted && !loading && !user) {
+    //   router.push("/login");
+    // }
   }, [user, loading, router, isMounted]);
 
   // Don't render children until we know the auth status
-  if (!isMounted || loading || !user) {
+  if (!isMounted || loading) {
     return (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh", backgroundColor: "#121212" }}>
         <div style={{
