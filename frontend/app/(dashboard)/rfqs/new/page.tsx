@@ -6,7 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import toast from "react-hot-toast";
+import { showLoading, showModalSuccess, closeAlert } from "@/lib/alerts";
 import styles from "./new-rfq.module.css";
 import { fetchVendors, Vendor } from "@/lib/data";
 
@@ -69,9 +69,11 @@ export default function NewRfqPage() {
 
   const onSubmit = async (data: NewRfqFormValues) => {
     console.log("Submitting New RFQ:", data);
+    showLoading("Creating RFQ...");
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 800));
-    toast.success("RFQ created and sent successfully!");
+    closeAlert();
+    await showModalSuccess("RFQ created and sent successfully!");
     router.push("/rfqs");
   };
 

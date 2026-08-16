@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import toast from "react-hot-toast";
 import { Plus, Trash2 } from "lucide-react";
+import { showLoading, showModalSuccess, closeAlert } from "@/lib/alerts";
 import styles from "./rfqs-page.module.css";
 import { fetchVendors, Vendor } from "@/lib/data";
 
@@ -77,8 +77,10 @@ export default function CreateRFQPage() {
 
   const onSubmit = async (data: RFQFormValues) => {
     console.log("Submitting RFQ:", data);
+    showLoading("Creating RFQ...");
     await new Promise(resolve => setTimeout(resolve, 800));
-    toast.success("RFQ Created & Invites Sent!");
+    closeAlert();
+    await showModalSuccess("RFQ Created & Invites Sent!");
     router.push("/dashboard");
   };
 

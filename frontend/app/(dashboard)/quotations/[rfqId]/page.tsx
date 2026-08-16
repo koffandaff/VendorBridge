@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Save, Send } from "lucide-react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import toast from "react-hot-toast";
+import { showLoading, showModalSuccess, showModalError, closeAlert, showToastError } from "@/lib/alerts";
 import styles from "./quote-page.module.css";
 import { fetchRFQById, RFQ, RFQItem } from "@/lib/data";
 
@@ -74,7 +74,7 @@ export default function SubmitQuotationPage() {
             }))
           });
         } else {
-          toast.error("RFQ not found");
+          showToastError("RFQ not found");
           router.push("/rfqs");
         }
       } catch (error) {
@@ -112,9 +112,11 @@ export default function SubmitQuotationPage() {
 
   const onSubmit = async (data: QuoteFormValues, isDraft: boolean) => {
     console.log(`Submitting Quotation (Draft: ${isDraft}):`, data);
+    showLoading(isDraft ? "Saving Draft..." : "Submitting Quotation...");
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 800));
-    toast.success(isDraft ? "Draft saved successfully!" : "Quotation submitted successfully!");
+    closeAlert();
+    await showModalSuccess(isDraft ? "Draft saved successfully!" : "Quotation submitted successfully!");
     router.push("/rfqs");
   };
 

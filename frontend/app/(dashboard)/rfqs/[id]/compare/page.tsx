@@ -4,8 +4,8 @@ import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { fetchRFQById, fetchQuotations, RFQ, Quotation } from "@/lib/data";
+import { showModalSuccess } from "@/lib/alerts";
 import styles from "./compare.module.css";
-import toast from "react-hot-toast";
 
 export default function CompareQuotesPage() {
   const router = useRouter();
@@ -117,9 +117,9 @@ export default function CompareQuotesPage() {
                     {isRecommended ? (
                       <button 
                         className={styles.sendButton}
-                        onClick={() => {
-                          toast.success("Sent to Manager for Approval!");
-                          setTimeout(() => router.push('/approvals'), 1500);
+                        onClick={async () => {
+                          await showModalSuccess("Sent to Manager for Approval!");
+                          router.push('/approvals');
                         }}
                       >
                         Send for Approval

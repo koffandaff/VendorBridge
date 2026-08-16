@@ -9,7 +9,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
-import toast from "react-hot-toast";
+import { showLoading, showModalSuccess, closeAlert } from "@/lib/alerts";
 
 type FilterTab = "All" | "Active" | "Pending" | "Blocked";
 
@@ -64,9 +64,11 @@ export default function VendorsPage() {
 
   const onSubmit = async (data: VendorFormValues) => {
     console.log("Submitting Vendor Data:", data);
+    showLoading("Adding Vendor...");
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 800));
-    toast.success("Vendor added successfully!");
+    closeAlert();
+    showModalSuccess("Vendor added successfully!");
     reset();
     setIsModalOpen(false);
   };

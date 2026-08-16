@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { CheckCircle2, Circle, Clock, Star, ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
-import toast from "react-hot-toast";
+import { showLoading, showModalSuccess, showModalError, showToastError, closeAlert } from "@/lib/alerts";
 import styles from "./approvals.module.css";
 
 import { fetchQuotations, Quotation } from "@/lib/data";
@@ -71,30 +71,30 @@ export default function ApprovalWorkflowPage() {
 
   const handleAction = async (action: "approve" | "reject") => {
     if (action === "reject" && !remarks.trim()) {
-      toast.error("Remarks are required to reject an approval.");
+      showToastError("Remarks are required to reject an approval.");
       return;
     }
 
     setIsSubmitting(true);
+    showLoading(action === "approve" ? "Approving..." : "Rejecting...");
     
     // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 800));
+    await new Promise(resolve => setTimeout(resolve, 1500));
     
     console.log(`Action: ${action.toUpperCase()}`);
     console.log(`Remarks: ${remarks}`);
     
+    closeAlert();
+    setIsSubmitting(false);
+
     if (action === "approve") {
-      toast.success("Quotation approved successfully!");
+      await showModalSuccess("Approved!", "Quotation approved successfully.");
     } else {
-      toast.error("Quotation rejected.");
+      await showModalError("Rejected", "Quotation has been rejected.");
     }
     
-    setIsSubmitting(false);
-    
     // Redirect back to dashboard or approvals list after action
-    setTimeout(() => {
-      router.push("/dashboard");
-    }, 1500);
+    router.push("/dashboard");
   };
 
   return (
