@@ -44,6 +44,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
   ],
   PROCUREMENT_OFFICER: [
     "notifications:view",
+    "analytics:view",
     "rfqs:create",
     "rfqs:edit",
     "vendors:assign",
@@ -55,14 +56,18 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
   ],
   APPROVER: [
     "notifications:view",
+    "analytics:view",
     "approvals:view",
     "approvals:approve",
     "approvals:reject",
     "approvals:remarks",
     "workflow:view",
+    "purchaseOrders:view",
+    "invoices:view",
   ],
   VENDOR: [
     "notifications:view",
+    "analytics:view",
     "rfqs:viewAssigned",
     "rfqs:viewDetails",
     "quotations:submit",
