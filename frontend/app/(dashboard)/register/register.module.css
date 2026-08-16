@@ -127,6 +127,12 @@
   outline: none;
   transition: all 0.2s;
   font-family: inherit;
+  color-scheme: dark;
+}
+
+.inputGroup select option {
+  background-color: #1a2333;
+  color: #f8fafc;
 }
 
 .inputGroup textarea {

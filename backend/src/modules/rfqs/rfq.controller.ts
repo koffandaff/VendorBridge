@@ -54,7 +54,8 @@ export class RfqController {
     try {
       const rfq = await this.service.updateRfq(
         getParam(req, "id"),
-        req.body as UpdateRfqInput
+        req.body as UpdateRfqInput,
+        req.user!.id
       );
       sendSuccess(res, rfq, "RFQ updated successfully");
     } catch (error) {
@@ -66,7 +67,8 @@ export class RfqController {
     try {
       const rfq = await this.service.updateRfqStatus(
         getParam(req, "id"),
-        req.body as UpdateRfqStatusInput
+        req.body as UpdateRfqStatusInput,
+        req.user!.id
       );
       sendSuccess(res, rfq, "RFQ status updated successfully");
     } catch (error) {

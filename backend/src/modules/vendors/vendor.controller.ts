@@ -76,7 +76,10 @@ export class VendorController {
   // Vendor Handlers
   createVendor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const vendor = await this.service.createVendor(req.body as CreateVendorInput);
+      const vendor = await this.service.createVendor(
+        req.body as CreateVendorInput,
+        req.user!.id
+      );
       sendCreated(res, vendor, "Vendor created successfully");
     } catch (error) {
       next(error);
@@ -106,7 +109,8 @@ export class VendorController {
     try {
       const vendor = await this.service.updateVendor(
         getParam(req, "id"),
-        req.body as UpdateVendorInput
+        req.body as UpdateVendorInput,
+        req.user!.id
       );
       sendSuccess(res, vendor, "Vendor updated successfully");
     } catch (error) {
@@ -118,7 +122,8 @@ export class VendorController {
     try {
       const vendor = await this.service.updateVendorStatus(
         getParam(req, "id"),
-        req.body as UpdateVendorStatusInput
+        req.body as UpdateVendorStatusInput,
+        req.user!.id
       );
       sendSuccess(res, vendor, "Vendor status updated successfully");
     } catch (error) {

@@ -9,7 +9,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { confirmPasswordSchema } from "@/lib/validation/password";
-import { resetPasswordWithOtp } from "@/lib/data";
+import { acceptInvitation } from "@/lib/data";
 import { ApiError } from "@/lib/api";
 
 const acceptInviteSchema = z
@@ -40,7 +40,7 @@ export default function AcceptInvitePage() {
 
   const onSubmit = async (data: AcceptInviteFormValues) => {
     try {
-      await resetPasswordWithOtp({
+      await acceptInvitation({
         email: data.email.trim(),
         otp: data.otp,
         newPassword: data.newPassword,

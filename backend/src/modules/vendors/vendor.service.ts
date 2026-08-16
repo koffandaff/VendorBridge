@@ -15,6 +15,7 @@ import type {
   UpdateVendorContactInput,
 } from "./vendor.types.js";
 import type { PaginationMeta } from "../../core/http/response.js";
+import { recordAudit } from "../../shared/helpers/audit.helper.js";
 
 export class VendorService {
   constructor(private readonly repository: VendorRepository = new VendorRepository()) {}
@@ -72,7 +73,7 @@ export class VendorService {
   // -------------------------------------------------------------------------
   // Vendor Services
   // -------------------------------------------------------------------------
-  async createVendor(input: CreateVendorInput) {
+  async createVendor(input: CreateVendorInput, actorId: string) {
     // 1. Verify category exists
     await this.getCategoryById(input.categoryId);
 
@@ -95,10 +96,18 @@ export class VendorService {
       }
     }
 
-    return this.repository.createVendor({
+    const vendor = await this.repository.createVendor({
       ...input,
       code: finalCode,
     });
+    await recordAudit({
+      userId: actorId,
+      action: "VENDOR_CREATED",
+      entityType: "Vendor",
+      entityId: vendor.id,
+      newValue: { name: vendor.name, code: vendor.code, categoryId: vendor.categoryId },
+    });
+    return vendor;
   }
 
   async getVendorById(id: string) {
@@ -125,8 +134,8 @@ export class VendorService {
     return { items, pagination };
   }
 
-  async updateVendor(id: string, input: UpdateVendorInput) {
-    await this.getVendorById(id);
+  async updateVendor(id: string, input: UpdateVendorInput, actorId: string) {
+    const existing = await this.getVendorById(id);
 
     if (input.categoryId) {
       await this.getCategoryById(input.categoryId);
@@ -139,12 +148,30 @@ export class VendorService {
       }
     }
 
-    return this.repository.updateVendor(id, input);
+    const updated = await this.repository.updateVendor(id, input);
+    await recordAudit({
+      userId: actorId,
+      action: "VENDOR_UPDATED",
+      entityType: "Vendor",
+      entityId: id,
+      oldValue: { name: existing.name },
+      newValue: { name: updated.name, code: updated.code },
+    });
+    return updated;
   }
 
-  async updateVendorStatus(id: string, input: UpdateVendorStatusInput) {
-    await this.getVendorById(id);
-    return this.repository.updateVendorStatus(id, input.status);
+  async updateVendorStatus(id: string, input: UpdateVendorStatusInput, actorId: string) {
+    const existing = await this.getVendorById(id);
+    const updated = await this.repository.updateVendorStatus(id, input.status);
+    await recordAudit({
+      userId: actorId,
+      action: "VENDOR_STATUS_UPDATED",
+      entityType: "Vendor",
+      entityId: id,
+      oldValue: { status: existing.status },
+      newValue: { status: updated.status, name: existing.name },
+    });
+    return updated;
   }
 
   async updateVendorRating(id: string, input: UpdateVendorRatingInput) {

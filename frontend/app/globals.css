@@ -20,6 +20,17 @@ body {
   min-height: 100vh;
 }
 
+input,
+select,
+textarea {
+  color-scheme: dark;
+}
+
+select option {
+  background-color: #1a2333;
+  color: #e2e8f0;
+}
+
 /* Scrollbar styling for a premium feel */
 ::-webkit-scrollbar {
   width: 8px;

@@ -170,6 +170,16 @@ export async function resetPassword(input: ResetPasswordRequest): Promise<void> 
   await authRepository.resetPassword(userId, await hashPassword(input.newPassword));
 }
 
+export async function acceptInvitation(input: ResetPasswordRequest): Promise<AuthUserDto> {
+  const user = await authRepository.findUserByEmail(input.email);
+  const userId = await verifyOtpAndReturnUserId(user, input.otp);
+
+  await authRepository.resetPassword(userId, await hashPassword(input.newPassword));
+
+  const accepted = await authRepository.findUserById(userId);
+  return toAuthUserDto(accepted!);
+}
+
 export async function register(input: RegisterRequest): Promise<AuthUserDto> {
   const existing = await authRepository.findUserByEmail(input.email);
   if (existing) {

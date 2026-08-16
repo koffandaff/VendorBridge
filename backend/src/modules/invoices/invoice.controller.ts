@@ -53,7 +53,8 @@ export class InvoiceController {
     try {
       const invoice = await this.service.updateInvoiceStatus(
         getParam(req, "id"),
-        req.body as UpdateInvoiceStatusInput
+        req.body as UpdateInvoiceStatusInput,
+        req.user!.id
       );
       sendSuccess(res, invoice, "Invoice status updated successfully");
     } catch (error) {

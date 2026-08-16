@@ -92,7 +92,7 @@ export class RfqService {
     return { items, pagination };
   }
 
-  async updateRfq(id: string, input: UpdateRfqInput) {
+  async updateRfq(id: string, input: UpdateRfqInput, actorId: string) {
     const rfq = await this.getRfqById(id);
     if (rfq.status !== "DRAFT") {
       throw new ConflictError("Only DRAFT RFQs can be edited");
@@ -110,10 +110,23 @@ export class RfqService {
       await this.repository.replaceInvitedVendors(id, invitedVendorIds);
     }
 
-    return this.repository.updateMetadata(id, input);
+    const updated = await this.repository.updateMetadata(id, input);
+    await recordAudit({
+      userId: actorId,
+      action: "RFQ_UPDATED",
+      entityType: "RFQ",
+      entityId: id,
+      oldValue: { title: rfq.title, deadline: rfq.deadline },
+      newValue: {
+        title: updated.title,
+        deadline: updated.deadline,
+        rfqNumber: updated.rfqNumber,
+      },
+    });
+    return updated;
   }
 
-  async updateRfqStatus(id: string, input: UpdateRfqStatusInput) {
+  async updateRfqStatus(id: string, input: UpdateRfqStatusInput, actorId: string) {
     const rfq = await this.getRfqById(id);
 
     const allowed = RFQ_TRANSITIONS[rfq.status] ?? [];
@@ -123,7 +136,16 @@ export class RfqService {
       );
     }
 
-    return this.repository.updateStatus(id, input.status);
+    const updated = await this.repository.updateStatus(id, input.status);
+    await recordAudit({
+      userId: actorId,
+      action: "RFQ_STATUS_UPDATED",
+      entityType: "RFQ",
+      entityId: id,
+      oldValue: { status: rfq.status },
+      newValue: { status: updated.status, rfqNumber: rfq.rfqNumber },
+    });
+    return updated;
   }
 
   private async validateInvitedVendors(vendorIds?: string[]): Promise<string[]> {

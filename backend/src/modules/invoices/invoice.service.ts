@@ -11,6 +11,7 @@ import {
 } from "../../shared/helpers/number.helper.js";
 import { calculateDocumentTotals, calculateLineTotals } from "../../shared/helpers/tax.helper.js";
 import { recordAudit } from "../../shared/helpers/audit.helper.js";
+import { notify, notifyRole } from "../../shared/helpers/notification.helper.js";
 import { sendInvoiceEmail } from "../../shared/email.js";
 import type { PaginationMeta } from "../../core/http/response.js";
 import type {
@@ -105,6 +106,23 @@ export class InvoiceService {
       entityId: invoice.id,
       newValue: { invoiceNumber: invoice.invoiceNumber, totalAmount: invoice.totalAmount },
     });
+    await Promise.all([
+      notifyRole("APPROVER", {
+        type: "INVOICE_GENERATED",
+        title: "Invoice generated",
+        message: `Invoice ${invoice.invoiceNumber} for ${invoice.totalAmount} was generated and is awaiting payment.`,
+        entityType: "Invoice",
+        entityId: invoice.id,
+      }),
+      notify({
+        userId: createdById,
+        type: "INVOICE_GENERATED",
+        title: "Invoice generated",
+        message: `Invoice ${invoice.invoiceNumber} was generated successfully.`,
+        entityType: "Invoice",
+        entityId: invoice.id,
+      }),
+    ]);
 
     return invoice;
   }
@@ -133,7 +151,7 @@ export class InvoiceService {
     return { items, pagination };
   }
 
-  async updateInvoiceStatus(id: string, input: UpdateInvoiceStatusInput) {
+  async updateInvoiceStatus(id: string, input: UpdateInvoiceStatusInput, actorId: string) {
     const invoice = await this.getInvoiceById(id);
 
     const allowed = INVOICE_TRANSITIONS[invoice.status] ?? [];
@@ -150,7 +168,16 @@ export class InvoiceService {
           ? { paidAt: new Date() }
           : undefined;
 
-    return this.repository.updateStatus(id, input.status, timestamps);
+    const updated = await this.repository.updateStatus(id, input.status, timestamps);
+    await recordAudit({
+      userId: actorId,
+      action: "INVOICE_STATUS_UPDATED",
+      entityType: "Invoice",
+      entityId: id,
+      oldValue: { status: invoice.status },
+      newValue: { status: updated.status, invoiceNumber: invoice.invoiceNumber },
+    });
+    return updated;
   }
 
   async generateInvoicePdf(id: string): Promise<{ buffer: Buffer; invoiceNumber: string }> {

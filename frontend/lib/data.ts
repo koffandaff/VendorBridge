@@ -144,14 +144,14 @@ function mapRfq(rfq: RFQDto): RFQ {
     number: rfq.rfqNumber,
     title: rfq.title,
     description: rfq.description,
-    category: ITEM_TYPE_LABEL[rfq.items[0]?.itemType ?? "PRODUCT"] ?? "Product",
+    category: ITEM_TYPE_LABEL[rfq.items?.[0]?.itemType ?? "PRODUCT"] ?? "Product",
     deadline: formatDate(rfq.deadline),
     vendorsAssignedCount: rfq._count?.invitedVendors ?? rfq.invitedVendors?.length ?? 0,
     quotesReceivedCount:
       rfq._count?.quotations ?? rfq.quotations?.filter((q) => q.status !== "DRAFT").length ?? 0,
     status: RFQ_STATUS_LABEL[rfq.status] ?? "Draft",
     rawStatus: rfq.status,
-    items: rfq.items.map((item) => ({
+    items: (rfq.items ?? []).map((item) => ({
       id: item.id,
       item: item.name,
       qty: toNumber(item.quantity),
@@ -390,24 +390,81 @@ export async function markInvoicePaid(id: string): Promise<InvoiceDto> {
   return api.patch<InvoiceDto>(`/invoices/${id}/status`, { status: "PAID" });
 }
 
+export interface ActivityLogEntry {
+  id: string;
+  action: string;
+  actionLabel: string;
+  entityType: string;
+  description: string;
+  userEmail: string | null;
+  createdAt: string;
+}
+
+const ACTION_LABEL: Record<string, string> = {
+  "USER.CREATED": "User created",
+  "USER.UPDATED": "User updated",
+  "USER.INVITE_ACCEPTED": "Invitation accepted",
+  "USER.INVITE_RESENT": "Invitation resent",
+  "USER.PASSWORD_RESET": "Password reset by admin",
+  "USER.DEACTIVATED": "User deactivated",
+  "USER.ACTIVATED": "User activated",
+  "AUTH.LOGIN": "Signed in",
+  "AUTH.LOGIN_FAILED": "Sign-in failed",
+  "AUTH.REGISTER": "Invitation sent",
+  "AUTH.LOGOUT": "Signed out",
+  "AUTH.PASSWORD_CHANGED": "Password changed",
+  "RFQ_CREATED": "RFQ created",
+  "RFQ_UPDATED": "RFQ updated",
+  "RFQ_STATUS_UPDATED": "RFQ status changed",
+  "QUOTATION_DRAFT_SAVED": "Quotation draft saved",
+  "QUOTATION_SUBMITTED": "Quotation submitted",
+  "QUOTATION_SELECTED": "Quotation selected",
+  "QUOTATION_REJECTED": "Quotation rejected",
+  "PO_CREATED": "Purchase order created",
+  "PO_STATUS_UPDATED": "Purchase order status changed",
+  "PO_ACKNOWLEDGED": "Purchase order acknowledged",
+  "INVOICE_GENERATED": "Invoice generated",
+  "INVOICE_EMAILED": "Invoice emailed",
+  "INVOICE_STATUS_UPDATED": "Invoice status changed",
+  "VENDOR_CREATED": "Vendor created",
+  "VENDOR_UPDATED": "Vendor updated",
+  "VENDOR_STATUS_UPDATED": "Vendor status changed",
+};
+
+function buildActivityDescription(log: AuditLogDto): string {
+  const value = log.newValue as Record<string, unknown> | undefined;
+  const reference =
+    typeof value?.invoiceNumber === "string"
+      ? value.invoiceNumber
+      : typeof value?.poNumber === "string"
+        ? value.poNumber
+        : typeof value?.rfqNumber === "string"
+          ? value.rfqNumber
+          : undefined;
+  const amount = typeof value?.totalAmount === "string" ? formatCurrencyCompact(value.totalAmount) : "";
+  const parts: string[] = [];
+  if (log.userEmail) parts.push(log.userEmail);
+  if (reference) parts.push(reference);
+  if (amount) parts.push(amount);
+  return parts.length > 0 ? parts.join(" · ") : "No additional details";
+}
+
 export async function fetchActivityLogs(
-  filters: { entityType?: string; page?: number; limit?: number } = {}
-): Promise<ListResult<{ id: string; action: string; entityType: string; description: string; timestamp: string }>> {
+  filters: { entityType?: string; action?: string; page?: number; limit?: number } = {}
+): Promise<ListResult<ActivityLogEntry>> {
   const result = await api.list<AuditLogDto>(
-    `/audit-logs${toQueryString({ entityType: filters.entityType, page: filters.page, limit: filters.limit ?? 50 })}`
+    `/audit-logs${toQueryString({ entityType: filters.entityType, action: filters.action, page: filters.page, limit: filters.limit ?? 50 })}`
   );
   return {
-    items: result.items.map((log) => {
-      const value = log.newValue as { status?: string; totalAmount?: string } | undefined;
-      const amount = value?.totalAmount ? formatCurrencyCompact(value.totalAmount) : "";
-      return {
-        id: log.id,
-        action: log.action,
-        entityType: log.entityType,
-        description: `${log.userEmail ?? "System"} — ${humanizeAction(log.action)}${amount ? ` (${amount})` : ""}`,
-        timestamp: formatDate(log.createdAt),
-      };
-    }),
+    items: result.items.map((log) => ({
+      id: log.id,
+      action: log.action,
+      actionLabel: ACTION_LABEL[log.action] ?? humanizeAction(log.action),
+      entityType: log.entityType,
+      description: buildActivityDescription(log),
+      userEmail: log.userEmail,
+      createdAt: log.createdAt,
+    })),
     pagination: result.pagination,
   };
 }
@@ -489,6 +546,14 @@ export async function resetPasswordWithOtp(input: {
   newPassword: string;
 }): Promise<null> {
   return api.post<null>("/auth/reset-password", input);
+}
+
+export async function acceptInvitation(input: {
+  email: string;
+  otp: string;
+  newPassword: string;
+}): Promise<{ id: string }> {
+  return api.post<{ id: string }>("/auth/accept-invite", input);
 }
 
 export async function changePassword(currentPassword: string, newPassword: string): Promise<null> {

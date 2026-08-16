@@ -13,7 +13,7 @@ export class AuditLogService {
     const dtoItems = items.map((item) => ({
       id: item.id,
       userId: item.userId,
-      userEmail: item.user.email,
+      userEmail: item.user?.email ?? null,
       action: item.action,
       entityType: item.entityType,
       entityId: item.entityId,

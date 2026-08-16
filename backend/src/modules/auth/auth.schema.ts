@@ -57,3 +57,5 @@ export const resetPasswordSchema = z.object({
   otp: otpSchema,
   newPassword: passwordSchema,
 });
+
+export const acceptInviteSchema = resetPasswordSchema;

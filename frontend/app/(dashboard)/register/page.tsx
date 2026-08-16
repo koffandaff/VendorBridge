@@ -20,7 +20,7 @@ export default function RegisterPage() {
     lastName: "",
     email: "",
     phone: "",
-    jobRole: "Vendor",
+    jobRole: "",
     dept: "",
     country: "",
     additionalInfo: ""
@@ -31,6 +31,8 @@ export default function RegisterPage() {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
+
+  const isAdminRole = formData.jobRole === "Admin";
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,7 +51,7 @@ export default function RegisterPage() {
         lastName: "",
         email: "",
         phone: "",
-        jobRole: "Vendor",
+        jobRole: "",
         dept: "",
         country: "",
         additionalInfo: ""
@@ -162,8 +164,12 @@ export default function RegisterPage() {
                 name="jobRole"
                 value={formData.jobRole}
                 onChange={handleChange}
+                required
                 disabled={isLoading}
               >
+                <option value="" disabled>
+                  Select a role…
+                </option>
                 <option value="Vendor">Vendor</option>
                 <option value="Procurement Officer">Procurement Officer</option>
                 <option value="Manager/Approver">Manager/Approver</option>
@@ -171,18 +177,20 @@ export default function RegisterPage() {
               </select>
             </div>
 
-            <div className={styles.inputGroup}>
-              <label htmlFor="dept">Department</label>
-              <input
-                id="dept"
-                name="dept"
-                type="text"
-                placeholder="e.g. IT Procurement"
-                value={formData.dept}
-                onChange={handleChange}
-                disabled={isLoading}
-              />
-            </div>
+            {!isAdminRole && (
+              <div className={styles.inputGroup}>
+                <label htmlFor="dept">Department</label>
+                <input
+                  id="dept"
+                  name="dept"
+                  type="text"
+                  placeholder="e.g. IT Procurement"
+                  value={formData.dept}
+                  onChange={handleChange}
+                  disabled={isLoading}
+                />
+              </div>
+            )}
 
             <div className={`${styles.inputGroup} ${styles.fullWidth}`}>
               <label htmlFor="country">Country</label>

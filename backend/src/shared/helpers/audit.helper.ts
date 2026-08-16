@@ -3,7 +3,7 @@ import { logger } from "../../core/logger/logger.js";
 import { prisma } from "../../lib/prisma.js";
 
 export interface RecordAuditInput {
-  userId: string;
+  userId?: string | null;
   action: string;
   entityType: string;
   entityId?: string | null;
@@ -15,18 +15,17 @@ export interface RecordAuditInput {
 
 export async function recordAudit(input: RecordAuditInput): Promise<void> {
   try {
-    await prisma.auditLog.create({
-      data: {
-        userId: input.userId,
-        action: input.action,
-        entityType: input.entityType,
-        entityId: input.entityId ?? null,
-        oldValue: input.oldValue,
-        newValue: input.newValue,
-        metadata: input.metadata,
-        ipAddress: input.ipAddress ?? null,
-      },
-    });
+    const data: Prisma.AuditLogUncheckedCreateInput = {
+      action: input.action,
+      entityType: input.entityType,
+      entityId: input.entityId ?? null,
+      oldValue: input.oldValue,
+      newValue: input.newValue,
+      metadata: input.metadata,
+      ipAddress: input.ipAddress ?? null,
+      ...(input.userId ? { userId: input.userId } : {}),
+    };
+    await prisma.auditLog.create({ data });
   } catch (error) {
     logger.error("failed to record audit log", {
       action: input.action,

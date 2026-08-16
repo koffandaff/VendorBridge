@@ -57,7 +57,8 @@ export class PurchaseOrderController {
     try {
       const purchaseOrder = await this.service.updatePurchaseOrderStatus(
         getParam(req, "id"),
-        req.body as UpdatePurchaseOrderStatusInput
+        req.body as UpdatePurchaseOrderStatusInput,
+        req.user!.id
       );
       sendSuccess(res, purchaseOrder, "Purchase order status updated successfully");
     } catch (error) {

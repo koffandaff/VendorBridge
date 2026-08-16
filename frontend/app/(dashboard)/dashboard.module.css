@@ -95,7 +95,7 @@
   -webkit-backdrop-filter: blur(12px);
   position: sticky;
   top: 0;
-  z-index: 5;
+  z-index: 30;
 }
 
 .userInfo {
@@ -108,7 +108,6 @@
   display: flex;
   align-items: center;
   gap: 20px;
-  margin-right: auto;
 }
 
 .userMenu {

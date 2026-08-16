@@ -14,6 +14,7 @@ import {
   calculateLineTotals,
 } from "../../shared/helpers/tax.helper.js";
 import { recordAudit } from "../../shared/helpers/audit.helper.js";
+import { notifyRole } from "../../shared/helpers/notification.helper.js";
 import type { PaginationMeta } from "../../core/http/response.js";
 import type {
   CreateQuotationInput,
@@ -141,6 +142,15 @@ export class QuotationService {
         totalAmount: saved.totalAmount,
       },
     });
+    if (!isDraft) {
+      await notifyRole("ADMIN", {
+        type: "QUOTATION_SUBMITTED",
+        title: "Quotation submitted",
+        message: `Quotation ${saved.quotationNumber} for ${saved.totalAmount} was submitted for review.`,
+        entityType: "Quotation",
+        entityId: saved.id,
+      });
+    }
 
     return saved;
   }

@@ -2,7 +2,7 @@ import type { PaginationMeta } from "../../core/http/response.js";
 
 export interface AuditLogListItemDto {
   id: string;
-  userId: string;
+  userId: string | null;
   userEmail: string | null;
   action: string;
   entityType: string;

@@ -16,6 +16,7 @@ import {
 } from "../../config/constants.js";
 import { authController } from "./auth.controller.js";
 import {
+  acceptInviteSchema,
   changePasswordSchema,
   forgotPasswordSchema,
   loginSchema,
@@ -90,6 +91,13 @@ router.post(
   createLimiter(OTP_RATE_LIMIT_MAX),
   validateBody(resetPasswordSchema),
   authController.resetPassword,
+);
+
+router.post(
+  "/accept-invite",
+  createLimiter(OTP_RATE_LIMIT_MAX),
+  validateBody(acceptInviteSchema),
+  authController.acceptInvite,
 );
 
 export default router;

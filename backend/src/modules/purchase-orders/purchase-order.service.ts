@@ -9,6 +9,7 @@ import {
   generateSequentialNumber,
 } from "../../shared/helpers/number.helper.js";
 import { recordAudit } from "../../shared/helpers/audit.helper.js";
+import { notify, notifyRole } from "../../shared/helpers/notification.helper.js";
 import { calculateDocumentTotals, calculateLineTotals } from "../../shared/helpers/tax.helper.js";
 import type { PaginationMeta } from "../../core/http/response.js";
 import type {
@@ -108,6 +109,23 @@ export class PurchaseOrderService {
       entityId: purchaseOrder.id,
       newValue: { poNumber: purchaseOrder.poNumber, totalAmount: purchaseOrder.totalAmount },
     });
+    await Promise.all([
+      notifyRole("APPROVER", {
+        type: "PO_CREATED",
+        title: "Purchase order awaiting review",
+        message: `Purchase order ${purchaseOrder.poNumber} was created for ${purchaseOrder.totalAmount}.`,
+        entityType: "PurchaseOrder",
+        entityId: purchaseOrder.id,
+      }),
+      notify({
+        userId: createdById,
+        type: "PO_CREATED",
+        title: "Purchase order created",
+        message: `Purchase order ${purchaseOrder.poNumber} was created successfully.`,
+        entityType: "PurchaseOrder",
+        entityId: purchaseOrder.id,
+      }),
+    ]);
 
     return purchaseOrder;
   }
@@ -136,7 +154,7 @@ export class PurchaseOrderService {
     return { items, pagination };
   }
 
-  async updatePurchaseOrderStatus(id: string, input: UpdatePurchaseOrderStatusInput) {
+  async updatePurchaseOrderStatus(id: string, input: UpdatePurchaseOrderStatusInput, actorId: string) {
     const purchaseOrder = await this.getPurchaseOrderById(id);
 
     const allowed = PO_TRANSITIONS[purchaseOrder.status] ?? [];
@@ -146,7 +164,16 @@ export class PurchaseOrderService {
       );
     }
 
-    return this.repository.updateStatus(id, input.status);
+    const updated = await this.repository.updateStatus(id, input.status);
+    await recordAudit({
+      userId: actorId,
+      action: "PO_STATUS_UPDATED",
+      entityType: "PurchaseOrder",
+      entityId: id,
+      oldValue: { status: purchaseOrder.status },
+      newValue: { status: updated.status, poNumber: purchaseOrder.poNumber },
+    });
+    return updated;
   }
 
   async acknowledgePurchaseOrder(id: string, userId: string) {

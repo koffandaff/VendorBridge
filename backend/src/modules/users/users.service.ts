@@ -4,6 +4,7 @@ import { generateOtp, hashOtp, otpExpiryDate } from "../../core/auth/otp.js";
 import { sendInviteEmail } from "../../shared/email.js";
 import { createOtpToken } from "../auth/auth.repository.js";
 import { recordAudit } from "../../shared/helpers/audit.helper.js";
+import { notify } from "../../shared/helpers/notification.helper.js";
 import { UserRepository, type UserListItemRecord } from "./users.repository.js";
 import type {
   CreateUserInput,
@@ -45,6 +46,14 @@ export class UserService {
       entityType: "User",
       entityId: created.id,
       newValue: { name: created.name, email: created.email, role: created.role },
+    });
+    await notify({
+      userId: created.id,
+      type: "SYSTEM",
+      title: "Welcome to VendorBridge",
+      message: `You have been invited as ${created.role}. Use the code sent to ${created.email} to activate your account.`,
+      entityType: "User",
+      entityId: created.id,
     });
     return created;
   }

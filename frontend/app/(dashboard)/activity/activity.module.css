@@ -1,7 +1,7 @@
 .container {
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 24px;
   animation: fadeIn 0.4s ease-out;
   width: 100%;
 }
@@ -20,11 +20,11 @@
 .headerLeft {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .title {
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 800;
   letter-spacing: -0.5px;
   background: linear-gradient(to right, #fff, #cbd5e1);
@@ -33,27 +33,112 @@
 }
 
 .subtitle {
-  font-size: 16px;
+  font-size: 15px;
   color: #94a3b8;
-  font-weight: 400;
+}
+
+/* Controls: search + count */
+.controlsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.searchBox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 0 8px 0 12px;
+  min-width: 280px;
+  flex: 1;
+  max-width: 460px;
+  transition: border-color 0.2s;
+}
+
+.searchBox:focus-within {
+  border-color: rgba(16, 185, 129, 0.5);
+}
+
+.searchIcon {
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #f8fafc;
+  font-size: 14px;
+  padding: 10px 0;
+  font-family: inherit;
+}
+
+.searchInput::placeholder {
+  color: #64748b;
+}
+
+.clearButton {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 6px;
+}
+
+.clearButton:hover {
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.searchButton {
+  background: #10b981;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.searchButton:hover {
+  background: #059669;
+}
+
+.resultCount {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 /* Tabs */
 .tabsRow {
   display: flex;
-  gap: 12px;
-  margin-bottom: 24px;
+  gap: 8px;
   overflow-x: auto;
-  padding-bottom: 8px;
+  padding-bottom: 4px;
 }
 
 .tabBtn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   color: #94a3b8;
-  padding: 8px 16px;
+  padding: 7px 14px;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
@@ -61,53 +146,87 @@
 }
 
 .tabBtn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.09);
   color: #f8fafc;
 }
 
 .activeTab {
-  background: rgba(16, 185, 129, 0.15) !important;
-  border-color: rgba(16, 185, 129, 0.5) !important;
+  background: rgba(16, 185, 129, 0.14) !important;
+  border-color: rgba(16, 185, 129, 0.45) !important;
   color: #10b981 !important;
 }
 
-/* Timeline/List */
+/* Timeline panel */
 .timelineContainer {
   background: rgba(15, 17, 21, 0.4);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 16px;
-  padding: 24px;
+  padding: 8px 24px 24px;
 }
 
 .timelineList {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+}
+
+/* Day groups */
+.dayGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.dayHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.dayHeader::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.dayCount {
+  background: rgba(255, 255, 255, 0.06);
+  color: #94a3b8;
+  border-radius: 9999px;
+  padding: 1px 8px;
+  font-size: 11px;
+  font-weight: 600;
 }
 
 .timelineItem {
   display: flex;
-  gap: 16px;
+  gap: 14px;
   align-items: flex-start;
   position: relative;
+  padding: 10px 0;
 }
 
 /* The vertical connecting line */
 .timelineItem:not(:last-child)::before {
-  content: '';
+  content: "";
   position: absolute;
-  left: 20px;
-  top: 40px;
-  bottom: -20px;
+  left: 19px;
+  top: 42px;
+  bottom: -6px;
   width: 2px;
   background-color: rgba(255, 255, 255, 0.05);
 }
 
 .iconWrapper {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -124,32 +243,64 @@
 .contentWrapper {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding-top: 2px;
+  gap: 3px;
+  padding-top: 1px;
+  min-width: 0;
+  flex: 1;
 }
 
 .description {
-  font-size: 15px;
+  font-size: 14px;
   color: #f8fafc;
-  line-height: 1.5;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-.description strong {
+.entityBadge {
+  font-size: 11px;
+  font-weight: 600;
   color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  padding: 2px 8px;
+  border-radius: 9999px;
+  text-transform: capitalize;
+}
+
+.meta {
+  font-size: 13px;
+  color: #94a3b8;
+  line-height: 1.4;
+  overflow-wrap: break-word;
 }
 
 .timestamp {
-  font-size: 13px;
+  font-size: 12px;
   color: #64748b;
   font-weight: 500;
+  white-space: nowrap;
+  padding-top: 3px;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Empty State */
 .emptyState {
-  padding: 48px;
+  padding: 56px 24px;
   text-align: center;
   color: #64748b;
   font-size: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.emptyHint {
+  font-size: 13px;
+  color: #94a3b8;
 }
 
 .stateContainer {
@@ -158,13 +309,26 @@
   align-items: center;
   justify-content: center;
   gap: 16px;
-  padding: 48px;
+  padding: 56px 24px;
   text-align: center;
 }
 
 .stateText {
   color: #9ca3af;
   font-size: 15px;
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  border-top-color: #10b981;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .retryButton {
@@ -183,27 +347,33 @@
   background: rgba(16, 185, 129, 0.1);
 }
 
+/* Pagination */
 .pagination {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-top: 24px;
-  padding-top: 20px;
+  margin-top: 18px;
+  padding-top: 16px;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   flex-wrap: wrap;
 }
 
 .paginationInfo {
-  font-size: 14px;
+  font-size: 13px;
   color: #9ca3af;
+}
+
+.pageButtons {
+  display: flex;
+  gap: 8px;
 }
 
 .pageButton {
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.12);
   color: #e5e7eb;
-  padding: 8px 16px;
+  padding: 7px 14px;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
@@ -212,6 +382,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  font-family: inherit;
 }
 
 .pageButton:hover:not(:disabled) {
@@ -224,20 +395,13 @@
   cursor: not-allowed;
 }
 
-/* Info Banner */
-.infoBanner {
-  background: rgba(59, 130, 246, 0.05);
-  border-left: 3px solid #3b82f6;
-  padding: 16px;
-  border-radius: 4px 8px 8px 4px;
-  margin-top: 16px;
-}
+@media (max-width: 640px) {
+  .controlsRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
 
-.infoBannerText {
-  font-size: 13px;
-  color: #94a3b8;
-  line-height: 1.5;
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
+  .searchBox {
+    max-width: none;
+  }
 }

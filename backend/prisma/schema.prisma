@@ -523,7 +523,7 @@ model Notification {
 // Append-only. Records: Who? What? Which entity? What changed? When? From where?
 model AuditLog {
   id         String   @id @default(uuid()) @db.Uuid
-  userId     String   @db.Uuid
+  userId     String?  @db.Uuid
   action     String
   entityType String
   entityId   String?  @db.Uuid
@@ -533,7 +533,7 @@ model AuditLog {
   ipAddress  String?
   createdAt  DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id])
+  user User? @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@index([entityType])
