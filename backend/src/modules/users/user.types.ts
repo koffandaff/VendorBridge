@@ -1,4 +1,11 @@
-import type { UserRole } from "@prisma/client";
+export type UserRole = "ADMIN" | "PROCUREMENT_OFFICER" | "APPROVER" | "VENDOR";
+
+export const UserRole = {
+  ADMIN: "ADMIN",
+  PROCUREMENT_OFFICER: "PROCUREMENT_OFFICER",
+  APPROVER: "APPROVER",
+  VENDOR: "VENDOR",
+} as const;
 
 export interface CreateUserInput {
   name: string;
