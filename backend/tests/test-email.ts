@@ -1,18 +1,10 @@
 import nodemailer from "nodemailer";
 
 async function testEmail() {
-  console.log("🚀 Testing Nodemailer with Gmail credentials...");
+  console.log("🚀 Testing Nodemailer with Gmail App Password...");
 
   const user = "hackathonadhd@gmail.com";
-  const pass = "Krisha1011@";
-
-  // Try Port 465 (SSL) and Port 587 (TLS/STARTTLS)
-  const transporterSSL = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 465,
-    secure: true, // SSL
-    auth: { user, pass },
-  });
+  const pass = "rlkg fglu vowg uiuz"; // App Password
 
   const transporterTLS = nodemailer.createTransport({
     host: "smtp.gmail.com",
@@ -21,41 +13,29 @@ async function testEmail() {
     auth: { user, pass },
   });
 
-  console.log("Checking SMTP Connection (Port 465 SSL)...");
-  try {
-    await transporterSSL.verify();
-    console.log("✅ SSL Connection Verified (Port 465)!");
-
-    const info = await transporterSSL.sendMail({
-      from: `"VendorBridge Test" <${user}>`,
-      to: user,
-      subject: "VendorBridge - Nodemailer Test Email (SSL)",
-      text: "Nodemailer integration test successfully sent!",
-      html: "<b>Nodemailer integration test successfully sent!</b>",
-    });
-
-    console.log("✅ Email sent successfully via SSL (465)! MessageID:", info.messageId);
-    return;
-  } catch (errSSL) {
-    console.log("⚠️ SSL (465) connection attempt result:", errSSL instanceof Error ? errSSL.message : errSSL);
-  }
-
-  console.log("\nChecking SMTP Connection (Port 587 TLS)...");
+  console.log("Checking SMTP Connection (Port 587 TLS)...");
   try {
     await transporterTLS.verify();
-    console.log("✅ TLS Connection Verified (Port 587)!");
+    console.log("✅ Connection Verified!");
 
     const info = await transporterTLS.sendMail({
-      from: `"VendorBridge Test" <${user}>`,
+      from: `"VendorBridge System" <${user}>`,
       to: user,
-      subject: "VendorBridge - Nodemailer Test Email (TLS)",
-      text: "Nodemailer integration test successfully sent!",
-      html: "<b>Nodemailer integration test successfully sent!</b>",
+      subject: "🎉 VendorBridge - Nodemailer Test Email Successful!",
+      text: "Congratulations! Your Nodemailer setup with Gmail App Password is live and working perfectly.",
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; background-color: #f4f6f9; border-radius: 8px;">
+          <h2 style="color: #2563eb;">VendorBridge Email System Active</h2>
+          <p>This is a test notification confirming that <strong>Nodemailer</strong> is successfully configured with your Gmail App Password.</p>
+          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+          <p style="font-size: 0.9em; color: #64748b;">Sender: ${user}</p>
+        </div>
+      `,
     });
 
-    console.log("✅ Email sent successfully via TLS (587)! MessageID:", info.messageId);
+    console.log("✅ Email sent successfully! MessageID:", info.messageId);
   } catch (errTLS) {
-    console.error("❌ TLS (587) connection failed:", errTLS instanceof Error ? errTLS.message : errTLS);
+    console.error("❌ Nodemailer failed:", errTLS instanceof Error ? errTLS.message : errTLS);
   }
 }
 
