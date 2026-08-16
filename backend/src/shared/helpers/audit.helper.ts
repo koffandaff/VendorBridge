@@ -1,21 +1,19 @@
 import { Prisma } from "@prisma/client";
-import { prisma } from "../prisma.js";
+import { logger } from "../../core/logger/logger.js";
+import { prisma } from "../../lib/prisma.js";
 
-export interface AuditLogInput {
+export interface RecordAuditInput {
   userId: string;
   action: string;
   entityType: string;
-  entityId?: string;
-  oldValue?: unknown;
-  newValue?: unknown;
-  metadata?: unknown;
+  entityId?: string | null;
+  oldValue?: Prisma.InputJsonValue;
+  newValue?: Prisma.InputJsonValue;
+  metadata?: Prisma.InputJsonValue;
+  ipAddress?: string | null;
 }
 
-/**
- * Append-only audit logging (docs/Schema.md §41).
- * Failures must never break the primary flow, so errors are swallowed.
- */
-export async function writeAuditLog(input: AuditLogInput): Promise<void> {
+export async function recordAudit(input: RecordAuditInput): Promise<void> {
   try {
     await prisma.auditLog.create({
       data: {
@@ -23,12 +21,17 @@ export async function writeAuditLog(input: AuditLogInput): Promise<void> {
         action: input.action,
         entityType: input.entityType,
         entityId: input.entityId ?? null,
-        oldValue: input.oldValue as Prisma.InputJsonValue | undefined,
-        newValue: input.newValue as Prisma.InputJsonValue | undefined,
-        metadata: input.metadata as Prisma.InputJsonValue | undefined,
+        oldValue: input.oldValue,
+        newValue: input.newValue,
+        metadata: input.metadata,
+        ipAddress: input.ipAddress ?? null,
       },
     });
-  } catch {
-    // Audit logging must never break the primary flow.
+  } catch (error) {
+    logger.error("failed to record audit log", {
+      action: input.action,
+      entityType: input.entityType,
+      message: error instanceof Error ? error.message : String(error),
+    });
   }
 }

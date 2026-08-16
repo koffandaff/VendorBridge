@@ -1,11 +1,11 @@
-import { UserService } from "../src/modules/users/user.service.js";
-import { userRouter } from "../src/modules/users/user.routes.js";
+import { UserService } from "../src/modules/users/users.service.js";
+import { usersRouter } from "../src/modules/users/users.routes.js";
 import { app } from "../src/app.js";
 
 async function runVerification() {
   console.log("Checking User/Manager module imports and exports...");
-  if (!userRouter) {
-    throw new Error("userRouter is not defined!");
+  if (!usersRouter) {
+    throw new Error("usersRouter is not defined!");
   }
   if (!UserService) {
     throw new Error("UserService is not defined!");

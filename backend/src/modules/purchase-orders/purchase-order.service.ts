@@ -8,7 +8,7 @@ import {
   buildYearPrefix,
   generateSequentialNumber,
 } from "../../shared/helpers/number.helper.js";
-import { writeAuditLog } from "../../shared/helpers/audit.helper.js";
+import { recordAudit } from "../../shared/helpers/audit.helper.js";
 import { calculateDocumentTotals, calculateLineTotals } from "../../shared/helpers/tax.helper.js";
 import type { PaginationMeta } from "../../core/http/response.js";
 import type {
@@ -101,7 +101,7 @@ export class PurchaseOrderService {
       }))
     );
 
-    await writeAuditLog({
+    await recordAudit({
       userId: createdById,
       action: "PO_CREATED",
       entityType: "PurchaseOrder",

@@ -9,7 +9,7 @@ import {
   generateSequentialNumber,
 } from "../../shared/helpers/number.helper.js";
 import { calculateDocumentTotals, calculateLineTotals } from "../../shared/helpers/tax.helper.js";
-import { writeAuditLog } from "../../shared/helpers/audit.helper.js";
+import { recordAudit } from "../../shared/helpers/audit.helper.js";
 import type { PaginationMeta } from "../../core/http/response.js";
 import type {
   CreateInvoiceInput,
@@ -94,7 +94,7 @@ export class InvoiceService {
       }))
     );
 
-    await writeAuditLog({
+    await recordAudit({
       userId: createdById,
       action: "INVOICE_GENERATED",
       entityType: "Invoice",

@@ -13,7 +13,7 @@ import {
   calculateDocumentTotals,
   calculateLineTotals,
 } from "../../shared/helpers/tax.helper.js";
-import { writeAuditLog } from "../../shared/helpers/audit.helper.js";
+import { recordAudit } from "../../shared/helpers/audit.helper.js";
 import type { PaginationMeta } from "../../core/http/response.js";
 import type {
   CreateQuotationInput,
@@ -74,7 +74,7 @@ export class QuotationService {
 
     const selected = await this.repository.updateStatus(id, "SELECTED");
 
-    await writeAuditLog({
+    await recordAudit({
       userId,
       action: "QUOTATION_SELECTED",
       entityType: "Quotation",
@@ -96,7 +96,7 @@ export class QuotationService {
 
     const rejected = await this.repository.updateStatus(id, "REJECTED");
 
-    await writeAuditLog({
+    await recordAudit({
       userId,
       action: "QUOTATION_REJECTED",
       entityType: "Quotation",
@@ -130,7 +130,7 @@ export class QuotationService {
     );
 
     const isDraft = input.isDraft ?? false;
-    await writeAuditLog({
+    await recordAudit({
       userId,
       action: isDraft ? "QUOTATION_DRAFT_SAVED" : "QUOTATION_SUBMITTED",
       entityType: "Quotation",
@@ -178,7 +178,7 @@ export class QuotationService {
     );
 
     const isDraft = input.isDraft ?? false;
-    await writeAuditLog({
+    await recordAudit({
       userId,
       action: isDraft ? "QUOTATION_DRAFT_SAVED" : "QUOTATION_SUBMITTED",
       entityType: "Quotation",

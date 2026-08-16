@@ -4,7 +4,7 @@ import {
   ConflictError,
   NotFoundError,
 } from "../../core/errors/app-error.js";
-import { writeAuditLog } from "../../shared/helpers/audit.helper.js";
+import { recordAudit } from "../../shared/helpers/audit.helper.js";
 import {
   buildYearPrefix,
   generateSequentialNumber,
@@ -51,7 +51,7 @@ export class RfqService {
       invitedVendorIds
     );
 
-    await writeAuditLog({
+    await recordAudit({
       userId: createdById,
       action: "RFQ_CREATED",
       entityType: "RFQ",

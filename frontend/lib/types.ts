@@ -202,14 +202,47 @@ export interface InvoiceDto {
   items?: InvoiceItemDto[];
 }
 
-export interface ActivityLogDto {
+export interface AuditLogDto {
   id: string;
+  userId: string;
+  userEmail: string | null;
   action: string;
   entityType: string;
-  entityId?: string | null;
-  newValue?: unknown;
+  entityId: string | null;
+  oldValue: unknown;
+  newValue: unknown;
+  metadata: unknown;
+  ipAddress: string | null;
   createdAt: string;
-  user: { id: string; name: string; email: string; role: BackendRole };
+}
+
+export interface DashboardSummaryDto {
+  users: { total: number; active: number };
+  vendors: { total: number; byStatus: Record<VendorStatus, number> };
+  categories: number;
+  rfqs: { total: number; byStatus: Record<RFQStatus, number> };
+  quotations: { total: number; byStatus: Record<QuotationStatus, number> };
+  pendingApprovals: number;
+  purchaseOrders: { total: number; totalSpend: string };
+  invoices: { total: number; byStatus: Record<InvoiceStatus, number>; outstanding: string };
+}
+
+export interface DashboardTrendPoint {
+  month: string;
+  rfqs: number;
+  purchaseOrders: number;
+  invoices: number;
+  spend: string;
+}
+
+export interface VendorPerformanceDto {
+  vendorId: string;
+  name: string;
+  code: string;
+  status: VendorStatus;
+  rating: string | null;
+  orderCount: number;
+  totalSpend: string;
 }
 
 export interface AnalyticsStatsDto {

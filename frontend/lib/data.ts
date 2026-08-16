@@ -2,12 +2,16 @@ import { api, toQueryString } from "./api";
 import { addDays, formatCurrencyCompact, formatDate, toNumber, toIsoDate } from "./format";
 import type {
   AnalyticsStatsDto,
+  AuditLogDto,
+  DashboardSummaryDto,
+  DashboardTrendPoint,
   InvoiceDto,
   PurchaseOrderDto,
   QuotationDto,
   ReportsOverviewDto,
   RFQDto,
   VendorDto,
+  VendorPerformanceDto,
 } from "./types";
 
 export interface DashboardStats {
@@ -174,12 +178,16 @@ function mapQuotation(quotation: QuotationDto): Quotation {
 }
 
 export async function fetchDashboardStats(): Promise<DashboardStats> {
-  const stats = await api.get<AnalyticsStatsDto>("/analytics/stats");
+  const [summary, trends] = await Promise.all([
+    api.get<DashboardSummaryDto>("/dashboard/summary"),
+    api.get<DashboardTrendPoint[]>(`/dashboard/trends${toQueryString({ months: 2 })}`),
+  ]);
+  const lastMonth = trends[trends.length - 1];
   return {
-    activeRfqs: stats.activeRfqs,
-    pendingApprovals: stats.pendingApprovals,
-    posThisMonth: formatCurrencyCompact(stats.posThisMonth),
-    overdueInvoices: stats.overdueInvoices,
+    activeRfqs: summary.rfqs.byStatus.OPEN ?? 0,
+    pendingApprovals: summary.pendingApprovals,
+    posThisMonth: formatCurrencyCompact(lastMonth?.purchaseOrders ?? 0),
+    overdueInvoices: summary.invoices.byStatus.OVERDUE ?? 0,
   };
 }
 
@@ -200,8 +208,10 @@ export async function fetchRecentPOs(): Promise<RecentPO[]> {
 }
 
 export async function fetchSpendingTrends(): Promise<ChartDataPoint[]> {
-  const overview = await api.get<ReportsOverviewDto>("/analytics/reports/overview");
-  return overview.spendingTrend;
+  const trends = await api.get<DashboardTrendPoint[]>(
+    `/dashboard/trends${toQueryString({ months: 6 })}`
+  );
+  return trends.map((point) => ({ name: point.month, spend: Number(point.spend) }));
 }
 
 export async function fetchVendors(): Promise<Vendor[]> {
@@ -370,8 +380,8 @@ export async function markInvoicePaid(id: string): Promise<InvoiceDto> {
 export async function fetchActivityLogs(): Promise<
   { id: string; action: string; entityType: string; description: string; timestamp: string }[]
 > {
-  const { items } = await api.get<{ items: { id: string; action: string; entityType: string; entityId?: string | null; newValue?: unknown; createdAt: string; user: { name: string } }[] }>(
-    `/activity${toQueryString({ limit: 50 })}`
+  const { items } = await api.get<{ items: AuditLogDto[] }>(
+    `/audit-logs${toQueryString({ limit: 50 })}`
   );
   return items.map((log) => {
     const value = log.newValue as { status?: string; totalAmount?: string } | undefined;
@@ -380,7 +390,7 @@ export async function fetchActivityLogs(): Promise<
       id: log.id,
       action: log.action,
       entityType: log.entityType,
-      description: `${log.user.name} — ${humanizeAction(log.action)}${amount ? ` (${amount})` : ""}`,
+      description: `${log.userEmail ?? "System"} — ${humanizeAction(log.action)}${amount ? ` (${amount})` : ""}`,
       timestamp: formatDate(log.createdAt),
     };
   });
@@ -394,11 +404,39 @@ function humanizeAction(action: string): string {
 }
 
 export async function fetchAnalyticsStats(): Promise<AnalyticsStatsDto> {
-  return api.get<AnalyticsStatsDto>("/analytics/stats");
+  const summary = await api.get<DashboardSummaryDto>("/dashboard/summary");
+  return {
+    activeRfqs: summary.rfqs.byStatus.OPEN ?? 0,
+    pendingApprovals: summary.pendingApprovals,
+    posThisMonth: summary.purchaseOrders.total,
+    overdueInvoices: summary.invoices.byStatus.OVERDUE ?? 0,
+  };
 }
 
 export async function fetchReportsOverview(): Promise<ReportsOverviewDto> {
-  return api.get<ReportsOverviewDto>("/analytics/reports/overview");
+  const [summary, trends, vendorPerformance, purchaseOrders] = await Promise.all([
+    api.get<DashboardSummaryDto>("/dashboard/summary"),
+    api.get<DashboardTrendPoint[]>(`/dashboard/trends${toQueryString({ months: 6 })}`),
+    api.get<VendorPerformanceDto[]>("/dashboard/vendor-performance"),
+    fetchPurchaseOrders(),
+  ]);
+  return {
+    spendingTrend: trends.map((point) => ({ name: point.month, spend: Number(point.spend) })),
+    spendByCategory: [],
+    topVendors: vendorPerformance.slice(0, 5).map((vendor) => ({
+      name: vendor.name,
+      spend: Number(vendor.totalSpend),
+    })),
+    vendorStatusCounts: summary.vendors.byStatus,
+    recentPos: purchaseOrders.map((po) => ({
+      id: po.id,
+      poNumber: po.poNumber,
+      vendor: po.vendor?.name ?? "—",
+      amount: Number(po.totalAmount),
+      status: po.status,
+      orderDate: po.orderDate,
+    })),
+  };
 }
 
 export async function registerUser(input: {

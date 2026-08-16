@@ -10,13 +10,14 @@ import { requestLoggerMiddleware } from "./core/logger/request-logger.js";
 import { requestIdMiddleware } from "./core/middleware/request-id.js";
 import { authRouter } from "./modules/auth/index.js";
 import { vendorRouter } from "./modules/vendors/index.js";
-import { userRouter } from "./modules/users/index.js";
+import { usersRouter } from "./modules/users/index.js";
 import { rfqRouter } from "./modules/rfqs/index.js";
 import { quotationRouter } from "./modules/quotations/index.js";
 import { purchaseOrderRouter } from "./modules/purchase-orders/index.js";
 import { invoiceRouter } from "./modules/invoices/index.js";
-import { activityRouter } from "./modules/activity/index.js";
-import { analyticsRouter } from "./modules/analytics/index.js";
+import { notificationsRouter } from "./modules/notifications/index.js";
+import { auditLogsRouter } from "./modules/audit-logs/index.js";
+import { dashboardRouter } from "./modules/dashboard/index.js";
 import { prisma } from "./shared/prisma.js";
 
 export const app = express();
@@ -49,7 +50,7 @@ app.get("/health", async (_req, res) => {
 // API Routes (backend/rules.md §22)
 app.use(`${API_PREFIX}/auth`, authRouter);
 app.use(`${API_PREFIX}/vendors`, vendorRouter);
-app.use(`${API_PREFIX}/users`, userRouter);
+app.use(`${API_PREFIX}/users`, usersRouter);
 
 // Procurement routes
 app.use(`${API_PREFIX}/rfqs`, rfqRouter);
@@ -57,9 +58,10 @@ app.use(`${API_PREFIX}/quotations`, quotationRouter);
 app.use(`${API_PREFIX}/purchase-orders`, purchaseOrderRouter);
 app.use(`${API_PREFIX}/invoices`, invoiceRouter);
 
-// Governance routes
-app.use(`${API_PREFIX}/activity`, activityRouter);
-app.use(`${API_PREFIX}/analytics`, analyticsRouter);
+// Admin routes
+app.use(`${API_PREFIX}/notifications`, notificationsRouter);
+app.use(`${API_PREFIX}/audit-logs`, auditLogsRouter);
+app.use(`${API_PREFIX}/dashboard`, dashboardRouter);
 
 // 404 Handler
 app.use((_req, _res, next) => {
