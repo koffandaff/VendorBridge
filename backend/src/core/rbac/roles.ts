@@ -3,6 +3,8 @@ import type { UserRole } from "@prisma/client";
 export type Permission =
   | "users:manage"
   | "vendors:manage"
+  | "auditLogs:view"
+  | "notifications:view"
   | "analytics:view"
   | "procurement:view"
   | "rfqs:create"
@@ -27,8 +29,16 @@ export type Permission =
   | "invoices:view";
 
 export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
-  ADMIN: ["users:manage", "vendors:manage", "analytics:view", "procurement:view"],
+  ADMIN: [
+    "users:manage",
+    "vendors:manage",
+    "auditLogs:view",
+    "notifications:view",
+    "analytics:view",
+    "procurement:view",
+  ],
   PROCUREMENT_OFFICER: [
+    "notifications:view",
     "rfqs:create",
     "rfqs:edit",
     "vendors:assign",
@@ -39,6 +49,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     "invoices:generate",
   ],
   APPROVER: [
+    "notifications:view",
     "approvals:view",
     "approvals:approve",
     "approvals:reject",
@@ -46,6 +57,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     "workflow:view",
   ],
   VENDOR: [
+    "notifications:view",
     "rfqs:viewAssigned",
     "rfqs:viewDetails",
     "quotations:submit",

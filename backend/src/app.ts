@@ -10,6 +10,10 @@ import { requestLoggerMiddleware } from "./core/logger/request-logger.js";
 import { requestIdMiddleware } from "./core/middleware/request-id.js";
 import { authRouter } from "./modules/auth/index.js";
 import { vendorRouter } from "./modules/vendors/index.js";
+import { usersRouter } from "./modules/users/index.js";
+import { notificationsRouter } from "./modules/notifications/index.js";
+import { auditLogsRouter } from "./modules/audit-logs/index.js";
+import { dashboardRouter } from "./modules/dashboard/index.js";
 import { prisma } from "./shared/prisma.js";
 
 export const app = express();
@@ -38,6 +42,12 @@ app.use(`${API_PREFIX}/auth`, authRouter);
 
 // Vendor routes
 app.use("/api/v1/vendors", vendorRouter);
+
+// Admin routes
+app.use(`${API_PREFIX}/users`, usersRouter);
+app.use(`${API_PREFIX}/notifications`, notificationsRouter);
+app.use(`${API_PREFIX}/audit-logs`, auditLogsRouter);
+app.use(`${API_PREFIX}/dashboard`, dashboardRouter);
 
 app.use((_req, _res, next) => {
   next(new NotFoundError("route not found"));
