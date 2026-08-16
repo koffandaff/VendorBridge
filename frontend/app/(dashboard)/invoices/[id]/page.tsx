@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { fetchInvoiceById, markInvoicePaid } from "@/lib/data";
+import { downloadInvoicePdf, fetchInvoiceById, markInvoicePaid, sendInvoiceEmail } from "@/lib/data";
 import type { InvoiceDto } from "@/lib/types";
 import { formatCurrency, formatDate, toNumber } from "@/lib/format";
 import styles from "./invoice.module.css";
@@ -16,6 +16,8 @@ export default function InvoiceDetailPage() {
   const [invoice, setInvoice] = useState<InvoiceDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [emailLoading, setEmailLoading] = useState(false);
 
   const loadInvoice = async () => {
     const data = await fetchInvoiceById(invoiceId);
@@ -45,6 +47,32 @@ export default function InvoiceDetailPage() {
       toast.error(error instanceof Error ? error.message : "Failed to mark invoice as paid");
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!invoice) return;
+    setPdfLoading(true);
+    try {
+      await downloadInvoicePdf(invoice.id, invoice.invoiceNumber);
+      toast.success("Invoice PDF downloaded");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to download PDF");
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
+  const handleEmailInvoice = async () => {
+    setEmailLoading(true);
+    try {
+      const updated = await sendInvoiceEmail(invoiceId);
+      toast.success(`Invoice emailed to ${updated.vendor?.name ?? "vendor"}`);
+      await loadInvoice();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to send invoice email");
+    } finally {
+      setEmailLoading(false);
     }
   };
 
@@ -97,19 +125,23 @@ export default function InvoiceDetailPage() {
         <div className={styles.headerActions}>
           <button
             className={styles.actionBtn}
-            onClick={() => toast.error("PDF download is not available yet.")}
+            onClick={handleDownloadPdf}
+            disabled={pdfLoading}
           >
-            Download PDF
+            {pdfLoading ? "Downloading..." : "Download PDF"}
           </button>
           <button className={styles.actionBtn} onClick={() => window.print()}>
             Print
           </button>
-          <button
-            className={styles.actionBtn}
-            onClick={() => toast.error("Email sending is not available yet.")}
-          >
-            Email invoice
-          </button>
+          {(invoice.status === "ISSUED" || invoice.status === "SENT") && (
+            <button
+              className={styles.actionBtn}
+              onClick={handleEmailInvoice}
+              disabled={emailLoading}
+            >
+              {emailLoading ? "Sending..." : "Email invoice"}
+            </button>
+          )}
         </div>
       </div>
 

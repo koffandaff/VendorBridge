@@ -1,4 +1,4 @@
-import { api, toQueryString } from "./api";
+import { api, downloadFile, toQueryString } from "./api";
 import { addDays, formatCurrencyCompact, formatDate, toNumber, toIsoDate } from "./format";
 import type {
   AnalyticsStatsDto,
@@ -192,7 +192,7 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
 }
 
 export async function fetchRecentPOs(): Promise<RecentPO[]> {
-  const { items } = await api.get<{ items: PurchaseOrderDto[] }>(
+  const items = await api.get<PurchaseOrderDto[]>(
     `/purchase-orders${toQueryString({ limit: 5 })}`
   );
   return items.map((po) => {
@@ -215,7 +215,7 @@ export async function fetchSpendingTrends(): Promise<ChartDataPoint[]> {
 }
 
 export async function fetchVendors(): Promise<Vendor[]> {
-  const { items } = await api.get<{ items: VendorDto[] }>(
+  const items = await api.get<VendorDto[]>(
     `/vendors${toQueryString({ limit: 100 })}`
   );
   return items.map(mapVendor);
@@ -256,7 +256,7 @@ export async function createVendor(input: {
 }
 
 export async function fetchRFQs(): Promise<RFQ[]> {
-  const { items } = await api.get<{ items: RFQDto[] }>(`/rfqs${toQueryString({ limit: 100 })}`);
+  const items = await api.get<RFQDto[]>(`/rfqs${toQueryString({ limit: 100 })}`);
   return items.map(mapRfq);
 }
 
@@ -290,7 +290,7 @@ export async function updateRfqStatus(id: string, status: string): Promise<RFQDt
 }
 
 export async function fetchQuotations(rfqId?: string): Promise<Quotation[]> {
-  const { items } = await api.get<{ items: QuotationDto[] }>(
+  const items = await api.get<QuotationDto[]>(
     `/quotations${toQueryString({ rfqId, limit: 100 })}`
   );
   return items.map(mapQuotation);
@@ -342,10 +342,26 @@ export async function createPurchaseOrder(input: {
 }
 
 export async function fetchPurchaseOrders(): Promise<PurchaseOrderDto[]> {
-  const { items } = await api.get<{ items: PurchaseOrderDto[] }>(
+  const items = await api.get<PurchaseOrderDto[]>(
     `/purchase-orders${toQueryString({ limit: 100 })}`
   );
   return items;
+}
+
+export async function fetchPurchaseOrderById(id: string): Promise<PurchaseOrderDto | undefined> {
+  try {
+    return await api.get<PurchaseOrderDto>(`/purchase-orders/${id}`);
+  } catch {
+    return undefined;
+  }
+}
+
+export async function updatePurchaseOrderStatus(id: string, status: string): Promise<PurchaseOrderDto> {
+  return api.patch<PurchaseOrderDto>(`/purchase-orders/${id}/status`, { status });
+}
+
+export async function acknowledgePurchaseOrder(id: string): Promise<PurchaseOrderDto> {
+  return api.post<PurchaseOrderDto>(`/purchase-orders/${id}/acknowledge`);
 }
 
 export async function createInvoice(input: {
@@ -359,7 +375,7 @@ export async function createInvoice(input: {
 }
 
 export async function fetchInvoices(): Promise<InvoiceDto[]> {
-  const { items } = await api.get<{ items: InvoiceDto[] }>(
+  const items = await api.get<InvoiceDto[]>(
     `/invoices${toQueryString({ limit: 100 })}`
   );
   return items;
@@ -377,10 +393,18 @@ export async function markInvoicePaid(id: string): Promise<InvoiceDto> {
   return api.patch<InvoiceDto>(`/invoices/${id}/status`, { status: "PAID" });
 }
 
+export async function sendInvoiceEmail(id: string): Promise<InvoiceDto> {
+  return api.post<InvoiceDto>(`/invoices/${id}/email`);
+}
+
+export async function downloadInvoicePdf(id: string, invoiceNumber: string): Promise<void> {
+  return downloadFile(`/invoices/${id}/pdf`, `${invoiceNumber}.pdf`);
+}
+
 export async function fetchActivityLogs(): Promise<
   { id: string; action: string; entityType: string; description: string; timestamp: string }[]
 > {
-  const { items } = await api.get<{ items: AuditLogDto[] }>(
+  const items = await api.get<AuditLogDto[]>(
     `/audit-logs${toQueryString({ limit: 50 })}`
   );
   return items.map((log) => {

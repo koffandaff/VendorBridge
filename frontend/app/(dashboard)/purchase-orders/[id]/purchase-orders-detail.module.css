@@ -16,12 +16,21 @@
   justify-content: space-between;
   align-items: flex-start;
   padding-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
 .headerLeft {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .title {
@@ -39,9 +48,37 @@
   font-weight: 400;
 }
 
+.badge {
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-block;
+  text-align: center;
+}
+
+.badgePending {
+  background-color: rgba(217, 119, 6, 0.1);
+  color: #f59e0b;
+  border: 1px solid rgba(217, 119, 6, 0.3);
+}
+
+.badgePaid {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.badgeOverdue {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
 .headerActions {
   display: flex;
   gap: 16px;
+  flex-wrap: wrap;
 }
 
 .actionBtn {
@@ -90,6 +127,10 @@
   border-bottom: none;
 }
 
+.infoRowFull {
+  grid-template-columns: 1fr;
+}
+
 .infoColumn {
   display: flex;
   flex-direction: column;
@@ -109,11 +150,15 @@
   line-height: 1.6;
 }
 
-.infoGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-top: 8px;
+.infoLine {
+  display: flex;
+  gap: 8px;
+  font-size: 14px;
+  color: #f8fafc;
+}
+
+.infoLineLabel {
+  color: #94a3b8;
 }
 
 /* Table Card */
@@ -155,7 +200,8 @@
   border-bottom: none;
 }
 
-.table td.alignRight, .table th.alignRight {
+.table td.alignRight,
+.table th.alignRight {
   text-align: right;
 }
 
@@ -192,36 +238,6 @@
   font-size: 16px;
   font-weight: 700;
   color: #f8fafc;
-}
-
-/* Footer */
-.footer {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  font-size: 14px;
-  color: #cbd5e1;
-}
-
-.statusBadge {
-  background: rgba(245, 158, 11, 0.15);
-  color: #f59e0b;
-  padding: 4px 12px;
-  border-radius: 4px;
-  border: 1px solid rgba(245, 158, 11, 0.3);
-  font-weight: 500;
-}
-
-.markPaid {
-  color: #3b82f6;
-  cursor: pointer;
-  text-decoration: none;
-  font-weight: 500;
-  transition: opacity 0.2s;
-}
-
-.markPaid:hover {
-  opacity: 0.8;
 }
 
 @media print {
@@ -269,9 +285,12 @@
     color: #0f172a !important;
   }
 
-  .infoRow span,
-  .infoRow div {
+  .infoLine {
     color: #0f172a !important;
+  }
+
+  .infoLineLabel {
+    color: #475569 !important;
   }
 
   .table th {
@@ -295,9 +314,5 @@
 
   .summaryContent {
     border-color: #e2e8f0 !important;
-  }
-
-  .footer {
-    color: #0f172a !important;
   }
 }

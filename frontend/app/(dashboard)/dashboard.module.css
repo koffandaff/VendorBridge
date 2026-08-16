@@ -170,3 +170,26 @@
     transform: none;
   }
 }
+
+@media print {
+  .layout {
+    transform: none;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+
+  .sidebar,
+  .topBar {
+    display: none !important;
+  }
+
+  .main {
+    background: #fff !important;
+  }
+
+  .content {
+    padding: 0;
+    overflow: visible;
+  }
+}

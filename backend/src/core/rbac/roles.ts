@@ -14,6 +14,7 @@ export type Permission =
   | "quotations:compare"
   | "quotations:select"
   | "purchaseOrders:generate"
+  | "purchaseOrders:acknowledge"
   | "invoices:generate"
   | "approvals:view"
   | "approvals:approve"
@@ -68,6 +69,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     "quotations:editDraft",
     "rfqs:trackStatus",
     "purchaseOrders:view",
+    "purchaseOrders:acknowledge",
     "invoices:view",
   ],
 };
