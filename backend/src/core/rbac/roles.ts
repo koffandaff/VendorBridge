@@ -36,6 +36,10 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     "notifications:view",
     "analytics:view",
     "procurement:view",
+    "quotations:view",
+    "quotations:compare",
+    "purchaseOrders:view",
+    "invoices:view",
   ],
   PROCUREMENT_OFFICER: [
     "notifications:view",
