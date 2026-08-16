@@ -6,6 +6,7 @@ import { Search, Plus, Eye, GitCompareArrows, Send, XCircle } from "lucide-react
 import styles from "./rfqs-list.module.css";
 import { fetchRFQs, updateRfqStatus, RFQ, RFQStatus } from "@/lib/data";
 import { showLoading, showModalSuccess, showToastError, closeAlert } from "@/lib/alerts";
+import { PageSkeleton, ToolbarSkeleton, TableSkeleton } from "@/components/ui/Skeleton";
 
 type FilterTab = "All" | "Draft" | "Sent" | "Quotes Received" | "Closed";
 
@@ -91,16 +92,10 @@ export default function RFQListPage() {
 
   if (loading) {
     return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", minHeight: "300px" }}>
-        <div style={{
-          width: "40px",
-          height: "40px",
-          border: "3px solid rgba(255, 255, 255, 0.1)",
-          borderRadius: "50%",
-          borderTopColor: "#10b981",
-          animation: "spin 1s ease-in-out infinite"
-        }}></div>
-      </div>
+      <PageSkeleton>
+        <ToolbarSkeleton />
+        <TableSkeleton rows={6} columns={8} />
+      </PageSkeleton>
     );
   }
 

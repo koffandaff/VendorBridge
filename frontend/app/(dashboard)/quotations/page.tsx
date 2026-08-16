@@ -6,6 +6,7 @@ import styles from "./quotations-list.module.css";
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/AuthContext";
+import { PageSkeleton, ToolbarSkeleton, TableSkeleton } from "@/components/ui/Skeleton";
 
 export default function QuotationsListPage() {
   const router = useRouter();
@@ -60,9 +61,10 @@ export default function QuotationsListPage() {
 
   if (loading) {
     return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", minHeight: "300px" }}>
-        <div style={{ width: "40px", height: "40px", border: "3px solid rgba(255, 255, 255, 0.1)", borderRadius: "50%", borderTopColor: "#10b981", animation: "spin 1s ease-in-out infinite" }}></div>
-      </div>
+      <PageSkeleton>
+        <ToolbarSkeleton tabs={false} />
+        <TableSkeleton rows={6} columns={6} />
+      </PageSkeleton>
     );
   }
 

@@ -7,6 +7,7 @@ import styles from "../purchase-orders/po-page.module.css"; // Reuse the PO page
 import { fetchInvoices } from "@/lib/data";
 import type { InvoiceDto } from "@/lib/types";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { PageSkeleton, ToolbarSkeleton, TableSkeleton } from "@/components/ui/Skeleton";
 
 type FilterTab = "All" | "Pending Payment" | "Paid" | "Overdue" | "Cancelled";
 
@@ -77,16 +78,10 @@ export default function InvoicesPage() {
 
   if (loading) {
     return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", minHeight: "300px" }}>
-        <div style={{
-          width: "40px",
-          height: "40px",
-          border: "3px solid rgba(255, 255, 255, 0.1)",
-          borderRadius: "50%",
-          borderTopColor: "#10b981",
-          animation: "spin 1s ease-in-out infinite"
-        }}></div>
-      </div>
+      <PageSkeleton>
+        <ToolbarSkeleton />
+        <TableSkeleton rows={6} columns={7} />
+      </PageSkeleton>
     );
   }
 

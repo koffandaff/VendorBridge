@@ -17,6 +17,7 @@ import {
 import styles from "./activity.module.css";
 import { fetchActivityLogs, type ActivityLogEntry } from "@/lib/data";
 import ProtectedRoute from "@/components/shared/ProtectedRoute";
+import { TimelineSkeleton } from "@/components/ui/Skeleton";
 
 type Tab = "All" | "RFQ" | "Quotation" | "PurchaseOrder" | "Invoice" | "Vendor" | "User" | "Approval";
 
@@ -221,9 +222,7 @@ export default function ActivityLogsPage() {
 
         <div className={styles.timelineContainer}>
           {loading ? (
-            <div className={styles.stateContainer}>
-              <div className={styles.spinner} />
-            </div>
+            <TimelineSkeleton rows={8} />
           ) : error ? (
             <div className={styles.stateContainer}>
               <div className={styles.stateText}>{error}</div>

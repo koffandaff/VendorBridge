@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { CheckCircle2, Circle, Clock, Star, ArrowLeft, Inbox } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { showLoading, showModalSuccess, showModalError, showToastError, closeAlert } from "@/lib/alerts";
+import { PageSkeleton, CardSkeleton } from "@/components/ui/Skeleton";
 import styles from "./approvals.module.css";
 
 import { fetchQuotations, rejectQuotation, selectQuotation, Quotation } from "@/lib/data";
@@ -46,16 +47,9 @@ export default function ApprovalWorkflowPage() {
 
   if (loading) {
     return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", minHeight: "300px" }}>
-        <div style={{
-          width: "40px",
-          height: "40px",
-          border: "3px solid rgba(255, 255, 255, 0.1)",
-          borderRadius: "50%",
-          borderTopColor: "#10b981",
-          animation: "spin 1s ease-in-out infinite"
-        }}></div>
-      </div>
+      <PageSkeleton>
+        <CardSkeleton lines={8} />
+      </PageSkeleton>
     );
   }
 

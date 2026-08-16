@@ -10,6 +10,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
 import { showLoading, showModalSuccess, showToastError, closeAlert } from "@/lib/alerts";
+import { PageSkeleton, ToolbarSkeleton, TableSkeleton } from "@/components/ui/Skeleton";
 
 type FilterTab = "All" | "Active" | "Pending" | "Blocked";
 
@@ -119,16 +120,10 @@ export default function VendorsPage() {
 
   if (loading) {
     return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", minHeight: "300px" }}>
-        <div style={{
-          width: "40px",
-          height: "40px",
-          border: "3px solid rgba(255, 255, 255, 0.1)",
-          borderRadius: "50%",
-          borderTopColor: "#10b981",
-          animation: "spin 1s ease-in-out infinite"
-        }}></div>
-      </div>
+      <PageSkeleton>
+        <ToolbarSkeleton />
+        <TableSkeleton rows={6} columns={6} />
+      </PageSkeleton>
     );
   }
 

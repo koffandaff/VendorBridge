@@ -17,6 +17,7 @@ import {
 import { fetchAnalyticsStats, fetchReportsOverview } from "@/lib/data";
 import type { ReportsOverviewDto } from "@/lib/types";
 import { formatCurrency, formatCurrencyCompact, toNumber } from "@/lib/format";
+import { PageSkeleton, StatsGridSkeleton, CardSkeleton } from "@/components/ui/Skeleton";
 
 function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: { value: number }[]; label?: string }) {
   if (active && payload && payload.length) {
@@ -53,16 +54,14 @@ export default function ReportsPage() {
 
   if (loading) {
     return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", minHeight: "300px" }}>
-        <div style={{
-          width: "40px",
-          height: "40px",
-          border: "3px solid rgba(255, 255, 255, 0.1)",
-          borderRadius: "50%",
-          borderTopColor: "#10b981",
-          animation: "spin 1s ease-in-out infinite"
-        }}></div>
-      </div>
+      <PageSkeleton>
+        <StatsGridSkeleton cards={4} />
+        <div className={styles.twoColumnGrid}>
+          <CardSkeleton lines={6} />
+          <CardSkeleton lines={6} />
+        </div>
+        <CardSkeleton lines={4} />
+      </PageSkeleton>
     );
   }
 
