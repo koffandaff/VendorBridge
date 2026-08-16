@@ -6,7 +6,7 @@ import { fetchInvoiceById, markInvoicePaid } from "@/lib/data";
 import type { InvoiceDto } from "@/lib/types";
 import { formatCurrency, formatDate, toNumber } from "@/lib/format";
 import styles from "./invoice.module.css";
-import toast from "react-hot-toast";
+import { showLoading, showModalSuccess, showToastError, closeAlert } from "@/lib/alerts";
 
 export default function InvoiceDetailPage() {
   const params = useParams();
@@ -37,12 +37,15 @@ export default function InvoiceDetailPage() {
 
   const handleMarkPaid = async () => {
     setActionLoading(true);
+    showLoading("Marking as Paid...");
     try {
       await markInvoicePaid(invoiceId);
-      toast.success("Payment marked as paid!");
+      closeAlert();
+      await showModalSuccess("Payment marked as paid!");
       await loadInvoice();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to mark invoice as paid");
+      closeAlert();
+      showToastError(error instanceof Error ? error.message : "Failed to mark invoice as paid");
     } finally {
       setActionLoading(false);
     }
@@ -97,7 +100,7 @@ export default function InvoiceDetailPage() {
         <div className={styles.headerActions}>
           <button
             className={styles.actionBtn}
-            onClick={() => toast.error("PDF download is not available yet.")}
+            onClick={() => showToastError("PDF download is not available yet.")}
           >
             Download PDF
           </button>
@@ -106,7 +109,7 @@ export default function InvoiceDetailPage() {
           </button>
           <button
             className={styles.actionBtn}
-            onClick={() => toast.error("Email sending is not available yet.")}
+            onClick={() => showToastError("Email sending is not available yet.")}
           >
             Email invoice
           </button>

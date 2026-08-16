@@ -5,8 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, CheckCircle2, FileText, Eye } from "lucide-react";
 import { fetchRFQById, fetchQuotations, selectQuotation, createPurchaseOrder, RFQ, Quotation } from "@/lib/data";
 import { addDays, formatCurrency, toIsoDate } from "@/lib/format";
+import { showLoading, showModalSuccess, showToastError, closeAlert } from "@/lib/alerts";
 import styles from "./compare.module.css";
-import toast from "react-hot-toast";
 
 export default function CompareQuotesPage() {
   const router = useRouter();
@@ -73,12 +73,15 @@ export default function CompareQuotesPage() {
 
   const handleSelect = async (quote: Quotation) => {
     setActionLoading(true);
+    showLoading("Selecting...");
     try {
       await selectQuotation(quote.id);
-      toast.success(`Selected ${quote.vendorName} for ${rfq.title}`);
+      closeAlert();
+      await showModalSuccess("Selected!", `Selected ${quote.vendorName} for ${rfq.title}`);
       await loadData();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to select quotation");
+      closeAlert();
+      showToastError(error instanceof Error ? error.message : "Failed to select quotation");
     } finally {
       setActionLoading(false);
     }
@@ -87,15 +90,18 @@ export default function CompareQuotesPage() {
   const handleGeneratePO = async () => {
     if (!selectedQuote) return;
     setActionLoading(true);
+    showLoading("Generating PO...");
     try {
       await createPurchaseOrder({
         quotationId: selectedQuote.id,
         expectedDeliveryDate: toIsoDate(addDays(new Date(), selectedQuote.deliveryDays || 14).toISOString()),
       });
-      toast.success("Purchase Order generated!");
+      closeAlert();
+      await showModalSuccess("Success", "Purchase Order generated!");
       router.push("/purchase-orders");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to generate purchase order");
+      closeAlert();
+      showToastError(error instanceof Error ? error.message : "Failed to generate purchase order");
     } finally {
       setActionLoading(false);
     }

@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import styles from "./login.module.css";
 import { useAuth } from "@/lib/AuthContext";
+import { showLoading, showModalSuccess, showModalError, showToastError, closeAlert } from "@/lib/alerts";
 import { ApiError } from "@/lib/api";
 
 const DEMO_ACCOUNTS = [
@@ -36,20 +37,26 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
+    if (!validate()) {
+      showToastError("Please fill out required fields correctly");
+      return;
+    }
 
-    setIsLoading(true);
+    showLoading("Authenticating...");
     setErrors({});
 
     try {
       await login(email.trim(), password);
+      closeAlert();
+      await showModalSuccess("Login Successful", "Welcome back!");
     } catch (error) {
+      closeAlert();
+      let msg = "Unable to sign in. Please try again.";
       if (error instanceof ApiError) {
-        setErrors({ form: error.message });
-      } else {
-        setErrors({ form: "Unable to sign in. Please try again." });
+        msg = error.message;
       }
-      setIsLoading(false);
+      setErrors({ form: msg });
+      showModalError("Login Failed", msg);
     }
   };
 

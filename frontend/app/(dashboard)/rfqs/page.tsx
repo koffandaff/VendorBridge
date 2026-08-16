@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Search, Plus, Eye, GitCompareArrows, Send, XCircle } from "lucide-react";
 import styles from "./rfqs-list.module.css";
 import { fetchRFQs, updateRfqStatus, RFQ, RFQStatus } from "@/lib/data";
-import toast from "react-hot-toast";
+import { showLoading, showModalSuccess, showToastError, closeAlert } from "@/lib/alerts";
 
 type FilterTab = "All" | "Draft" | "Sent" | "Quotes Received" | "Closed";
 
@@ -64,22 +64,28 @@ export default function RFQListPage() {
   };
 
   const handleOpen = async (rfq: RFQ) => {
+    showLoading("Opening RFQ...");
     try {
       await updateRfqStatus(rfq.id, "OPEN");
-      toast.success(`RFQ ${rfq.number} opened for quotes`);
+      closeAlert();
+      await showModalSuccess(`RFQ ${rfq.number} opened for quotes`);
       await loadRfqs();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to open RFQ");
+      closeAlert();
+      showToastError(error instanceof Error ? error.message : "Failed to open RFQ");
     }
   };
 
   const handleClose = async (rfq: RFQ) => {
+    showLoading("Closing RFQ...");
     try {
       await updateRfqStatus(rfq.id, "CLOSED");
-      toast.success(`RFQ ${rfq.number} closed`);
+      closeAlert();
+      await showModalSuccess(`RFQ ${rfq.number} closed`);
       await loadRfqs();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to close RFQ");
+      closeAlert();
+      showToastError(error instanceof Error ? error.message : "Failed to close RFQ");
     }
   };
 
