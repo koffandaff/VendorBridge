@@ -118,8 +118,6 @@ export interface ListResult<T> {
   pagination: PaginationMeta;
 }
 
-const EMPTY_PAGINATION: PaginationMeta = { page: 1, limit: 0, totalItems: 0, totalPages: 0 };
-
 export async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE}${API_PREFIX}${path}`;
 
@@ -170,9 +168,16 @@ export const api = {
   list<T>(path: string): Promise<ListResult<T>> {
     return (async () => {
       const envelope = await request<ApiSuccess<T>>(path, { method: "GET" });
+      const data = envelope.data as T[] | { items: T[] } | null | undefined;
+      const items = Array.isArray(data) ? data : data?.items ?? [];
       return {
-        items: envelope.data as T[],
-        pagination: envelope.pagination ?? EMPTY_PAGINATION,
+        items,
+        pagination: envelope.pagination ?? {
+          page: 1,
+          limit: items.length,
+          totalItems: items.length,
+          totalPages: items.length > 0 ? 1 : 0,
+        },
       };
     })();
   },

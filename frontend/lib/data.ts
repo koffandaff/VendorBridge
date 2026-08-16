@@ -195,7 +195,7 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
 }
 
 export async function fetchRecentPOs(): Promise<RecentPO[]> {
-  const { items } = await api.get<{ items: PurchaseOrderDto[] }>(
+  const { items } = await api.list<PurchaseOrderDto>(
     `/purchase-orders${toQueryString({ limit: 5 })}`
   );
   return items.map((po) => {
@@ -218,7 +218,7 @@ export async function fetchSpendingTrends(): Promise<ChartDataPoint[]> {
 }
 
 export async function fetchVendors(): Promise<Vendor[]> {
-  const { items } = await api.get<{ items: VendorDto[] }>(
+  const { items } = await api.list<VendorDto>(
     `/vendors${toQueryString({ limit: 100 })}`
   );
   return items.map(mapVendor);
@@ -259,7 +259,7 @@ export async function createVendor(input: {
 }
 
 export async function fetchRFQs(): Promise<RFQ[]> {
-  const { items } = await api.get<{ items: RFQDto[] }>(`/rfqs${toQueryString({ limit: 100 })}`);
+  const { items } = await api.list<RFQDto>(`/rfqs${toQueryString({ limit: 100 })}`);
   return items.map(mapRfq);
 }
 
@@ -293,7 +293,7 @@ export async function updateRfqStatus(id: string, status: string): Promise<RFQDt
 }
 
 export async function fetchQuotations(rfqId?: string): Promise<Quotation[]> {
-  const { items } = await api.get<{ items: QuotationDto[] }>(
+  const { items } = await api.list<QuotationDto>(
     `/quotations${toQueryString({ rfqId, limit: 100 })}`
   );
   return items.map(mapQuotation);
@@ -345,7 +345,7 @@ export async function createPurchaseOrder(input: {
 }
 
 export async function fetchPurchaseOrders(): Promise<PurchaseOrderDto[]> {
-  const { items } = await api.get<{ items: PurchaseOrderDto[] }>(
+  const { items } = await api.list<PurchaseOrderDto>(
     `/purchase-orders${toQueryString({ limit: 100 })}`
   );
   return items;
@@ -362,7 +362,7 @@ export async function createInvoice(input: {
 }
 
 export async function fetchInvoices(): Promise<InvoiceDto[]> {
-  const { items } = await api.get<{ items: InvoiceDto[] }>(
+  const { items } = await api.list<InvoiceDto>(
     `/invoices${toQueryString({ limit: 100 })}`
   );
   return items;
