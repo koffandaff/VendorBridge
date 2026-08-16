@@ -45,7 +45,13 @@ export default function VendorsPage() {
 
   const loadVendors = async () => {
     const data = await fetchVendors();
-    setVendors(data);
+    const lowerQuery = searchQuery.toLowerCase();
+    const matchesTab = activeTab === "All" || vendor.status === activeTab;
+    const matchesSearch =
+      vendor.name.toLowerCase().includes(lowerQuery) ||
+      vendor.gstNumber.toLowerCase().includes(lowerQuery) ||
+      vendor.category.toLowerCase().includes(lowerQuery);
+    setVendors(vendors.filter((vendor) => matchesTab && matchesSearch));
   };
 
   useEffect(() => {
@@ -99,13 +105,12 @@ export default function VendorsPage() {
   };
 
   // Filter vendors based on active tab and search query
-  const filteredVendors = vendors.filter((vendor) => {
-    const matchesTab = activeTab === "All" || vendor.status === activeTab;
+  const filteredVendors = vendors.filter((v: Vendor) => {
+    const matchesTab = activeTab === "All" || v.status === activeTab;
     const lowerQuery = searchQuery.toLowerCase();
-    const matchesSearch = 
-      vendor.name.toLowerCase().includes(lowerQuery) ||
-      vendor.gstNumber.toLowerCase().includes(lowerQuery) ||
-      vendor.category.toLowerCase().includes(lowerQuery);
+    const matchesSearch = v.name.toLowerCase().includes(lowerQuery) ||
+      v.gstNumber.toLowerCase().includes(lowerQuery) ||
+      v.category.toLowerCase().includes(lowerQuery);
     return matchesTab && matchesSearch;
   });
 

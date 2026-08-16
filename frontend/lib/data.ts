@@ -216,6 +216,17 @@ export async function fetchSpendingTrends(): Promise<ChartDataPoint[]> {
   return trends.map((point) => ({ name: point.month, spend: Number(point.spend) }));
 }
 
+export async function fetchRecentInvoices(): Promise<{ id: string; status: string; total: string }[]> {
+  const invoices = await api.get<{ id: string; status: string; totalAmount: number }[]>(
+    `/invoices?limit=5`
+  );
+  return invoices.map((inv) => ({
+    id: inv.id,
+    status: inv.status,
+    total: \`\${inv.totalAmount.toFixed(2)}
+  }));
+}
+
 export async function fetchVendors(): Promise<Vendor[]> {
   const items = await api.get<VendorDto[]>(`/vendors${toQueryString({ limit: 100 })}`);
   return items.map(mapVendor);

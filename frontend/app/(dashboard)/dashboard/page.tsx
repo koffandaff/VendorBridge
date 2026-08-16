@@ -11,12 +11,13 @@ import {
   YAxis, 
   CartesianGrid, 
   Tooltip, 
-  ResponsiveContainer 
+  ResponsiveContainer
 } from "recharts";
 import { 
   fetchDashboardStats, 
   fetchRecentPOs, 
   fetchSpendingTrends,
+  fetchRecentInvoices,
   DashboardStats,
   RecentPO,
   ChartDataPoint
@@ -30,19 +31,22 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentPOs, setRecentPOs] = useState<RecentPO[]>([]);
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
+  const [recentInvoices, setRecentInvoices] = useState<{ id: string; status: string; total: string }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [statsData, posData, trendsData] = await Promise.all([
+        const [statsData, posData, trendsData, recentInvoicesData] = await Promise.all([
           fetchDashboardStats(),
           fetchRecentPOs(),
-          fetchSpendingTrends()
+          fetchSpendingTrends(),
+          fetchRecentInvoices()
         ]);
         setStats(statsData);
         setRecentPOs(posData);
         setChartData(trendsData);
+        setRecentInvoices(recentInvoicesData);
       } catch (error) {
         console.error("Failed to load dashboard data", error);
       } finally {
