@@ -38,6 +38,14 @@ async function deliver(message: EmailMessage): Promise<void> {
     return;
   }
 
+  if (env.NODE_ENV !== "production") {
+    logger.info("[email] message prepared", {
+      to: message.to,
+      subject: message.subject,
+      body: message.text,
+    });
+  }
+
   try {
     await transporter.sendMail({
       from: env.SMTP_FROM ?? "VendorBridge <no-reply@vendorbridge.local>",
@@ -66,6 +74,8 @@ export function sendOtpCode(to: string, code: string): Promise<void> {
       code,
       "",
       `This code expires in ${env.OTP_EXPIRES_MINUTES} minutes. If you did not request it, you can ignore this email.`,
+      "",
+      `To reset your password, open ${env.CLIENT_URL}/reset-password and enter your email address and the code above.`,
     ].join("\n"),
   });
 }
@@ -82,15 +92,16 @@ export function sendInviteEmail(to: string, name: string, code: string): Promise
       "",
       "An administrator has created your VendorBridge account.",
       "",
-      "Use this verification code to verify your email address and set up your account:",
+      `HOW TO ACCEPT YOUR INVITE:`,
       "",
-      code,
+      `1. Open this page in your browser: ${env.CLIENT_URL}/accept-invite`,
+      `2. Enter the email address you were invited with.`,
+      `3. Enter the verification code below: ${code}`,
+      `4. Choose a password and click Set Password - you will be signed in.`,
       "",
       `This code expires in ${env.OTP_EXPIRES_MINUTES} minutes.`,
       "",
-      `Open ${env.CLIENT_URL}/accept-invite and enter your email address and the code above to choose a password and sign in.`,
-      "",
-      "If you were not expecting this, you can ignore this email.",
+      "If you were not expecting this email, you can ignore it.",
     ].join("\n"),
   });
 }
