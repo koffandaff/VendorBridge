@@ -2,21 +2,25 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
-import { useForm } from "react-hook-form";
+import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { useForm, useFieldArray } from "react-hook-form";
+import type { Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { showLoading, showModalSuccess, closeAlert } from "@/lib/alerts";
+import { showLoading, showModalSuccess, showToastError, closeAlert } from "@/lib/alerts";
 import styles from "./new-rfq.module.css";
-import { fetchVendors, Vendor } from "@/lib/data";
+import { createRFQ, fetchVendors, Vendor } from "@/lib/data";
 
 const newRfqSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters"),
-  category: z.enum(["Furniture", "IT Hardware", "Construction", "Logistics", "Stationery", "Other"], {
-    message: "Please select a valid category"
-  }),
   deadline: z.string().min(1, "Deadline is required"),
-  details: z.string().min(20, "Please provide detailed specifications (min 20 characters)"),
+  details: z.string().min(3, "Please provide specifications for this RFQ"),
+  items: z.array(z.object({
+    itemName: z.string().min(1, "Item name required"),
+    qty: z.coerce.number().positive("Must be > 0"),
+    unit: z.string().min(1, "Unit required"),
+    itemType: z.enum(["PRODUCT", "SERVICE"]),
+  })).min(1, "Add at least one item"),
   assignedVendors: z.array(z.string()).min(1, "Please assign at least one vendor"),
 });
 
@@ -29,19 +33,25 @@ export default function NewRfqPage() {
 
   const {
     register,
+    control,
     handleSubmit,
     watch,
     setValue,
     formState: { errors, isSubmitting }
   } = useForm<NewRfqFormValues>({
-    resolver: zodResolver(newRfqSchema),
+    resolver: zodResolver(newRfqSchema) as unknown as Resolver<NewRfqFormValues>,
     defaultValues: {
+      items: [{ itemName: "", qty: 1, unit: "pcs", itemType: "PRODUCT" }],
       assignedVendors: [],
     }
   });
 
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "items"
+  });
+
   const selectedVendors = watch("assignedVendors");
-  const selectedCategory = watch("category");
 
   useEffect(() => {
     const loadVendors = async () => {
@@ -68,13 +78,27 @@ export default function NewRfqPage() {
   };
 
   const onSubmit = async (data: NewRfqFormValues) => {
-    console.log("Submitting New RFQ:", data);
     showLoading("Creating RFQ...");
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 800));
-    closeAlert();
-    await showModalSuccess("RFQ created and sent successfully!");
-    router.push("/rfqs");
+    try {
+      await createRFQ({
+        title: data.title,
+        description: data.details,
+        deadline: data.deadline,
+        items: data.items.map((item) => ({
+          name: item.itemName,
+          quantity: item.qty,
+          unit: item.unit,
+          itemType: item.itemType,
+        })),
+        invitedVendorIds: data.assignedVendors,
+      });
+      closeAlert();
+      await showModalSuccess("RFQ created and sent successfully!");
+      router.push("/rfqs");
+    } catch (error) {
+      closeAlert();
+      showToastError(error instanceof Error ? error.message : "Failed to create RFQ");
+    }
   };
 
   return (
@@ -85,9 +109,9 @@ export default function NewRfqPage() {
           <h1 className={styles.title}>Create New RFQ</h1>
           <p className={styles.subtitle}>Draft and send a new request for quotation</p>
         </div>
-        <button 
-          className={styles.backButton} 
-          onClick={() => router.back()}
+        <button
+          className={styles.backButton}
+          onClick={() => router.push("/rfqs")}
         >
           <ArrowLeft size={16} />
           <span>Back to RFQs</span>
@@ -97,12 +121,12 @@ export default function NewRfqPage() {
       <div className={styles.formCard}>
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className={styles.formGrid}>
-            
+
             {/* Title */}
             <div className={`${styles.formGroup} ${styles.fullWidth}`}>
               <label className={styles.formLabel}>RFQ Title</label>
-              <input 
-                type="text" 
+              <input
+                type="text"
                 className={`${styles.formInput} ${errors.title ? styles.error : ""}`}
                 placeholder="e.g. Q3 Office Laptop Procurement"
                 {...register("title")}
@@ -110,29 +134,11 @@ export default function NewRfqPage() {
               {errors.title && <span className={styles.formError}>{errors.title.message}</span>}
             </div>
 
-            {/* Category */}
-            <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Category</label>
-              <select 
-                className={`${styles.formSelect} ${errors.category ? styles.error : ""}`}
-                {...register("category")}
-              >
-                <option value="">Select category...</option>
-                <option value="Furniture">Furniture</option>
-                <option value="IT Hardware">IT Hardware</option>
-                <option value="Construction">Construction</option>
-                <option value="Logistics">Logistics</option>
-                <option value="Stationery">Stationery</option>
-                <option value="Other">Other</option>
-              </select>
-              {errors.category && <span className={styles.formError}>{errors.category.message}</span>}
-            </div>
-
             {/* Deadline */}
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>Submission Deadline</label>
-              <input 
-                type="date" 
+              <input
+                type="date"
                 className={`${styles.formInput} ${errors.deadline ? styles.error : ""}`}
                 {...register("deadline")}
               />
@@ -142,12 +148,97 @@ export default function NewRfqPage() {
             {/* Product/Service Details */}
             <div className={`${styles.formGroup} ${styles.fullWidth}`}>
               <label className={styles.formLabel}>Specifications / Details</label>
-              <textarea 
+              <textarea
                 className={`${styles.formTextarea} ${errors.details ? styles.error : ""}`}
-                placeholder="Describe exactly what you need, including quantities, quality standards, and delivery requirements..."
+                placeholder="Describe exactly what you need, including quality standards and delivery requirements..."
                 {...register("details")}
               />
               {errors.details && <span className={styles.formError}>{errors.details.message}</span>}
+            </div>
+
+            {/* Items */}
+            <div className={`${styles.formGroup} ${styles.fullWidth}`}>
+              <label className={styles.formLabel}>Requested Items</label>
+              <p style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>
+                Add the items or services you want vendors to quote on.
+              </p>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                {fields.map((field, index) => (
+                  <div
+                    key={field.id}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1.5fr 0.5fr 0.5fr 1fr auto",
+                      gap: "8px",
+                      alignItems: "start",
+                    }}
+                  >
+                    <input
+                      type="text"
+                      placeholder="Item name"
+                      className={`${styles.formInput} ${errors.items?.[index]?.itemName ? styles.error : ""}`}
+                      {...register(`items.${index}.itemName`)}
+                    />
+                    <input
+                      type="number"
+                      placeholder="Qty"
+                      className={`${styles.formInput} ${errors.items?.[index]?.qty ? styles.error : ""}`}
+                      {...register(`items.${index}.qty`)}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Unit"
+                      className={`${styles.formInput} ${errors.items?.[index]?.unit ? styles.error : ""}`}
+                      {...register(`items.${index}.unit`)}
+                    />
+                    <select
+                      className={`${styles.formSelect} ${errors.items?.[index]?.itemType ? styles.error : ""}`}
+                      {...register(`items.${index}.itemType`)}
+                    >
+                      <option value="PRODUCT">Product</option>
+                      <option value="SERVICE">Service</option>
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => remove(index)}
+                      style={{
+                        background: "transparent",
+                        border: "1px solid rgba(239, 68, 68, 0.3)",
+                        color: "#ef4444",
+                        borderRadius: "8px",
+                        padding: "10px",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
+                {errors.items?.root && <span className={styles.formError}>{errors.items.root.message}</span>}
+                <button
+                  type="button"
+                  onClick={() => append({ itemName: "", qty: 1, unit: "pcs", itemType: "PRODUCT" })}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    background: "rgba(16, 185, 129, 0.1)",
+                    border: "1px dashed rgba(16, 185, 129, 0.4)",
+                    color: "#10b981",
+                    padding: "10px 16px",
+                    borderRadius: "10px",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    alignSelf: "flex-start",
+                  }}
+                >
+                  <Plus size={16} /> Add Item
+                </button>
+              </div>
             </div>
 
             {/* Assign Vendors */}
@@ -156,7 +247,7 @@ export default function NewRfqPage() {
               <p style={{ fontSize: "12px", color: "#64748b", marginBottom: "4px" }}>
                 Select the active vendors you want to invite to this RFQ.
               </p>
-              
+
               <div className={styles.checkboxGroup}>
                 {loadingVendors ? (
                   <span style={{ color: "#94a3b8", fontSize: "14px" }}>Loading vendors...</span>
@@ -165,7 +256,7 @@ export default function NewRfqPage() {
                 ) : (
                   vendors.map(vendor => (
                     <label key={vendor.id} className={styles.checkboxItem}>
-                      <input 
+                      <input
                         type="checkbox"
                         checked={(selectedVendors || []).includes(vendor.id)}
                         onChange={() => handleVendorToggle(vendor.id)}
@@ -180,19 +271,19 @@ export default function NewRfqPage() {
             </div>
 
           </div>
-          
+
           <div className={styles.actionsRow}>
-            <button 
+            <button
               type="button"
-              className={styles.cancelButton} 
-              onClick={() => router.back()}
+              className={styles.cancelButton}
+              onClick={() => router.push("/rfqs")}
               disabled={isSubmitting}
             >
               Cancel
             </button>
-            <button 
+            <button
               type="submit"
-              className={styles.submitButton} 
+              className={styles.submitButton}
               disabled={isSubmitting}
             >
               {isSubmitting ? "Creating..." : "Create & Send RFQ"}

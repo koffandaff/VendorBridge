@@ -8,6 +8,7 @@ import {
   buildYearPrefix,
   generateSequentialNumber,
 } from "../../shared/helpers/number.helper.js";
+import { recordAudit } from "../../shared/helpers/audit.helper.js";
 import { calculateDocumentTotals, calculateLineTotals } from "../../shared/helpers/tax.helper.js";
 import type { PaginationMeta } from "../../core/http/response.js";
 import type {
@@ -75,7 +76,7 @@ export class PurchaseOrderService {
       }))
     );
 
-    return this.repository.createWithItems(
+    const purchaseOrder = await this.repository.createWithItems(
       {
         poNumber,
         quotationId: quotation.id,
@@ -99,6 +100,16 @@ export class PurchaseOrderService {
         totalAmount: lineTotals.totalAmount,
       }))
     );
+
+    await recordAudit({
+      userId: createdById,
+      action: "PO_CREATED",
+      entityType: "PurchaseOrder",
+      entityId: purchaseOrder.id,
+      newValue: { poNumber: purchaseOrder.poNumber, totalAmount: purchaseOrder.totalAmount },
+    });
+
+    return purchaseOrder;
   }
 
   async getPurchaseOrderById(id: string) {

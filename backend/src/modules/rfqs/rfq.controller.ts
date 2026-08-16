@@ -34,7 +34,7 @@ export class RfqController {
   listRfqs = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const filters = req.query as unknown as RfqQueryFilters;
-      const { items, pagination } = await this.service.listRfqs(filters);
+      const { items, pagination } = await this.service.listRfqs(filters, req.user!);
       sendPaginated(res, items, pagination, "RFQs retrieved successfully");
     } catch (error) {
       next(error);

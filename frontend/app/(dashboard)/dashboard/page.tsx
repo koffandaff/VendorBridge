@@ -82,7 +82,7 @@ export default function DashboardPage() {
       <div className={styles.header}>
         <h1 className={styles.title}>Dashboard</h1>
         <p className={styles.subtitle}>
-          Welcome back, {user?.username || "Guest"} - {user?.role || "User"} - Today's Overview
+          Welcome back, {user?.username || "Guest"} - {user?.role || "User"} - Today&apos;s Overview
         </p>
       </div>
 
@@ -97,7 +97,7 @@ export default function DashboardPage() {
           <span className={styles.cardValue}>{stats.pendingApprovals}</span>
         </div>
         <div className={styles.card}>
-          <span className={styles.cardHeader}>PO's this month</span>
+          <span className={styles.cardHeader}>PO&apos;s this month</span>
           <span className={styles.cardValue}>{stats.posThisMonth}</span>
         </div>
         <div className={styles.card}>
@@ -182,7 +182,7 @@ export default function DashboardPage() {
       <div className={styles.actionsRow}>
         <button 
           className={styles.actionButton}
-          onClick={() => router.push("/rfqs")}
+          onClick={() => router.push("/rfqs/new")}
         >
           + New RFQ
         </button>
