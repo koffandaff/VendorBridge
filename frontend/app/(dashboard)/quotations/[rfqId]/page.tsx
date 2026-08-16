@@ -6,7 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import toast from "react-hot-toast";
+import { showLoading, showModalSuccess, closeAlert } from "@/lib/alerts";
 import styles from "./quote-page.module.css";
 import { fetchRFQById, RFQ, RFQItem } from "@/lib/data";
 
@@ -112,9 +112,11 @@ export default function SubmitQuotationPage() {
 
   const onSubmit = async (data: QuoteFormValues, isDraft: boolean) => {
     console.log(`Submitting Quotation (Draft: ${isDraft}):`, data);
+    showLoading(isDraft ? "Saving draft..." : "Submitting quotation...");
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 800));
-    toast.success(isDraft ? "Draft saved successfully!" : "Quotation submitted successfully!");
+    closeAlert();
+    await showModalSuccess("Success", isDraft ? "Draft saved successfully!" : "Quotation submitted successfully!");
     router.push("/rfqs");
   };
 

@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import styles from "./login.module.css";
 import { useAuth, UserRole } from "@/lib/AuthContext";
+import { showLoading, showModalSuccess, showModalError, closeAlert } from "@/lib/alerts";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -31,6 +32,7 @@ export default function LoginPage() {
     if (!validate()) return;
 
     setIsLoading(true);
+    showLoading("Authenticating...");
 
     // Mock an async API call
     await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -50,10 +52,14 @@ export default function LoginPage() {
     }
 
     if (!role) {
+      closeAlert();
       setErrors({ username: "Invalid username or password" });
       setIsLoading(false);
       return;
     }
+
+    closeAlert();
+    await showModalSuccess("Welcome Back!", "Login successful.");
 
     login({
       username,

@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { User, UserPlus } from "lucide-react";
 import styles from "./register.module.css";
-import toast from "react-hot-toast";
+import { showLoading, showModalSuccess, closeAlert } from "@/lib/alerts";
 
 export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -27,12 +27,14 @@ export default function RegisterPage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    showLoading("Registering user...");
 
     // Mock API call
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     setIsLoading(false);
-    toast.success("User successfully registered!");
+    closeAlert();
+    await showModalSuccess("Success", "User successfully registered!");
     
     // Reset form
     setFormData({

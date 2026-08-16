@@ -4,7 +4,7 @@ import React from "react";
 import { useParams, useRouter } from "next/navigation";
 import { MOCK_PURCHASE_ORDERS } from "@/lib/mockData";
 import styles from "./invoice.module.css";
-import toast from "react-hot-toast";
+import { showLoading, showModalSuccess, closeAlert } from "@/lib/alerts";
 
 export default function InvoiceDetailPage() {
   const params = useParams();
@@ -135,8 +135,11 @@ export default function InvoiceDetailPage() {
         <button 
           className={styles.markPaid} 
           style={{ background: "transparent", border: "none", padding: 0 }}
-          onClick={() => {
-            toast.success("Payment marked as paid!");
+          onClick={async () => {
+            showLoading("Processing payment...");
+            await new Promise(resolve => setTimeout(resolve, 800));
+            closeAlert();
+            await showModalSuccess("Success", "Payment marked as paid!");
             router.push('/invoices');
           }}
         >
