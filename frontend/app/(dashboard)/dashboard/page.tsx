@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/AuthContext";
 import styles from "./dashboard-page.module.css";
 import { 
@@ -12,34 +13,44 @@ import {
   Tooltip, 
   ResponsiveContainer 
 } from "recharts";
-
-// Mock Data
-const MOCK_STATS = {
-  activeRfqs: 12,
-  pendingApprovals: 5,
-  posThisMonth: "$ 24,500",
-  overdueInvoices: 3
-};
-
-const MOCK_RECENT_POS = [
-  { id: "PO-2023-001", vendor: "TechCorp Inc.", amount: "$4,500", status: "Approved" },
-  { id: "PO-2023-002", vendor: "Office Supplies Co.", amount: "$850", status: "Pending" },
-  { id: "PO-2023-003", vendor: "Global Logistics", amount: "$12,400", status: "Approved" },
-  { id: "PO-2023-004", vendor: "Marketing Solutions", amount: "$3,200", status: "Draft" },
-  { id: "PO-2023-005", vendor: "Software Systems", amount: "$1,850", status: "Pending" },
-];
-
-const MOCK_CHART_DATA = [
-  { name: "Jan", spend: 12000 },
-  { name: "Feb", spend: 19000 },
-  { name: "Mar", spend: 15000 },
-  { name: "Apr", spend: 22000 },
-  { name: "May", spend: 18000 },
-  { name: "Jun", spend: 24500 },
-];
+import { 
+  fetchDashboardStats, 
+  fetchRecentPOs, 
+  fetchSpendingTrends,
+  DashboardStats,
+  RecentPO,
+  ChartDataPoint
+} from "@/lib/data";
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const router = useRouter();
+
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [recentPOs, setRecentPOs] = useState<RecentPO[]>([]);
+  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [statsData, posData, trendsData] = await Promise.all([
+          fetchDashboardStats(),
+          fetchRecentPOs(),
+          fetchSpendingTrends()
+        ]);
+        setStats(statsData);
+        setRecentPOs(posData);
+        setChartData(trendsData);
+      } catch (error) {
+        console.error("Failed to load dashboard data", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadData();
+  }, []);
 
   const getStatusBadgeClass = (status: string) => {
     switch(status) {
@@ -49,6 +60,21 @@ export default function DashboardPage() {
       default: return "";
     }
   };
+
+  if (loading || !stats) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", minHeight: "300px" }}>
+        <div style={{
+          width: "40px",
+          height: "40px",
+          border: "3px solid rgba(255, 255, 255, 0.1)",
+          borderRadius: "50%",
+          borderTopColor: "#10b981",
+          animation: "spin 1s ease-in-out infinite"
+        }}></div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>
@@ -64,19 +90,19 @@ export default function DashboardPage() {
       <div className={styles.statsGrid}>
         <div className={styles.card}>
           <span className={styles.cardHeader}>Active RFQs</span>
-          <span className={styles.cardValue}>{MOCK_STATS.activeRfqs}</span>
+          <span className={styles.cardValue}>{stats.activeRfqs}</span>
         </div>
         <div className={styles.card}>
           <span className={styles.cardHeader}>Pending Approvals</span>
-          <span className={styles.cardValue}>{MOCK_STATS.pendingApprovals}</span>
+          <span className={styles.cardValue}>{stats.pendingApprovals}</span>
         </div>
         <div className={styles.card}>
           <span className={styles.cardHeader}>PO's this month</span>
-          <span className={styles.cardValue}>{MOCK_STATS.posThisMonth}</span>
+          <span className={styles.cardValue}>{stats.posThisMonth}</span>
         </div>
         <div className={styles.card}>
           <span className={styles.cardHeader}>Overdue Invoices</span>
-          <span className={styles.cardValue}>{MOCK_STATS.overdueInvoices}</span>
+          <span className={styles.cardValue}>{stats.overdueInvoices}</span>
         </div>
       </div>
 
@@ -96,7 +122,7 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {MOCK_RECENT_POS.map((po) => (
+                {recentPOs.map((po) => (
                   <tr key={po.id}>
                     <td>{po.id}</td>
                     <td>{po.vendor}</td>
@@ -118,33 +144,33 @@ export default function DashboardPage() {
           <h2 className={styles.sectionTitle}>Spending Trends (Last 6 Months)</h2>
           <div className={styles.chartContainer}>
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={MOCK_CHART_DATA}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                 <XAxis 
                   dataKey="name" 
-                  stroke="#a1a1aa" 
+                  stroke="#94a3b8" 
                   fontSize={12}
                   tickLine={false}
                   axisLine={false}
                 />
                 <YAxis 
-                  stroke="#a1a1aa" 
+                  stroke="#94a3b8" 
                   fontSize={12}
                   tickLine={false}
                   axisLine={false}
                   tickFormatter={(value) => `$${value/1000}k`}
                 />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', color: '#fff' }}
-                  itemStyle={{ color: '#00ff88' }}
+                  contentStyle={{ backgroundColor: 'rgba(30, 41, 59, 0.9)', borderColor: 'rgba(255,255,255,0.1)', color: '#f8fafc', borderRadius: '8px', backdropFilter: 'blur(8px)' }}
+                  itemStyle={{ color: '#10b981' }}
                 />
                 <Line 
                   type="monotone" 
                   dataKey="spend" 
-                  stroke="#00ff88" 
+                  stroke="#10b981" 
                   strokeWidth={2}
-                  dot={{ r: 4, fill: '#18181b', stroke: '#00ff88', strokeWidth: 2 }}
-                  activeDot={{ r: 6, fill: '#00ff88' }}
+                  dot={{ r: 4, fill: '#1e293b', stroke: '#10b981', strokeWidth: 2 }}
+                  activeDot={{ r: 6, fill: '#10b981' }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -156,19 +182,19 @@ export default function DashboardPage() {
       <div className={styles.actionsRow}>
         <button 
           className={styles.actionButton}
-          onClick={() => console.log("Navigate to New RFQ")}
+          onClick={() => router.push("/rfqs")}
         >
           + New RFQ
         </button>
         <button 
           className={styles.actionButton}
-          onClick={() => console.log("Navigate to Add Vendor")}
+          onClick={() => router.push("/vendors")}
         >
           Add Vendor
         </button>
         <button 
           className={styles.actionButton}
-          onClick={() => console.log("Navigate to View Invoices")}
+          onClick={() => router.push("/invoices")}
         >
           View Invoices
         </button>
