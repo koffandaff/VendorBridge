@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { fetchRFQs, RFQ } from "@/lib/data";
+import { fetchRFQs, fetchQuotations, RFQ, Quotation } from "@/lib/data";
 import styles from "./quotations-list.module.css";
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -11,6 +11,7 @@ export default function QuotationsListPage() {
   const router = useRouter();
   const { user } = useAuth();
   const [rfqs, setRfqs] = useState<RFQ[]>([]);
+  const [myQuotations, setMyQuotations] = useState<Quotation[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -19,6 +20,10 @@ export default function QuotationsListPage() {
       try {
         const data = await fetchRFQs();
         setRfqs(data);
+        if (user?.role === "Vendor") {
+          const quotations = await fetchQuotations();
+          setMyQuotations(quotations);
+        }
       } catch (error) {
         console.error("Failed to load RFQs", error);
       } finally {
@@ -26,9 +31,20 @@ export default function QuotationsListPage() {
       }
     };
     loadData();
-  }, []);
+  }, [user?.role]);
 
   const isVendor = user?.role === "Vendor";
+
+  const getMyStatus = (rfqId: string) => {
+    const quotation = myQuotations.find((q) => q.rfqId === rfqId && q.rawStatus !== "DRAFT");
+    if (!quotation) return { label: "Not Submitted", color: "#94a3b8" };
+    switch (quotation.status) {
+      case "Accepted": return { label: "Accepted", color: "#10b981" };
+      case "Rejected": return { label: "Rejected", color: "#ef4444" };
+      case "Draft": return { label: "Draft", color: "#94a3b8" };
+      default: return { label: "Submitted", color: "#f59e0b" };
+    }
+  };
 
   // Vendors see RFQs they need to bid on. Officers see RFQs that have received quotes to compare.
   const displayRFQs = rfqs.filter((rfq) => {
@@ -39,7 +55,7 @@ export default function QuotationsListPage() {
   });
 
   const filteredRFQs = displayRFQs.filter(
-    (rfq) => rfq.title.toLowerCase().includes(searchQuery.toLowerCase()) || rfq.id.toLowerCase().includes(searchQuery.toLowerCase())
+    (rfq) => rfq.title.toLowerCase().includes(searchQuery.toLowerCase()) || rfq.number.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (loading) {
@@ -89,13 +105,16 @@ export default function QuotationsListPage() {
               {filteredRFQs.length > 0 ? (
                 filteredRFQs.map(rfq => (
                   <tr key={rfq.id}>
-                    <td style={{ fontWeight: 600, color: "#94a3b8" }}>{rfq.id}</td>
+                    <td style={{ fontWeight: 600, color: "#94a3b8" }}>{rfq.number}</td>
                     <td style={{ fontWeight: 600, color: "#f8fafc" }}>{rfq.title}</td>
                     <td>{rfq.deadline}</td>
                     <td>{rfq.category}</td>
                     <td>
                       {isVendor ? (
-                        <span style={{ color: "#f59e0b", fontWeight: 600 }}>Pending Submission</span>
+                        (() => {
+                          const status = getMyStatus(rfq.id);
+                          return <span style={{ color: status.color, fontWeight: 600 }}>{status.label}</span>;
+                        })()
                       ) : (
                         <span style={{ color: "#10b981", fontWeight: 600 }}>{rfq.quotesReceivedCount} Quotes</span>
                       )}

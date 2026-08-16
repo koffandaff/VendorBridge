@@ -9,6 +9,7 @@ import {
   generateSequentialNumber,
 } from "../../shared/helpers/number.helper.js";
 import { calculateDocumentTotals, calculateLineTotals } from "../../shared/helpers/tax.helper.js";
+import { recordAudit } from "../../shared/helpers/audit.helper.js";
 import type { PaginationMeta } from "../../core/http/response.js";
 import type {
   CreateInvoiceInput,
@@ -33,7 +34,7 @@ export class InvoiceService {
    * Copies PO items, recalculates all amounts server-side, and creates the
    * invoice in ISSUED status within a single transaction.
    */
-  async createInvoice(input: CreateInvoiceInput) {
+  async createInvoice(input: CreateInvoiceInput, createdById: string) {
     const purchaseOrder = await this.repository.findPoForInvoice(input.purchaseOrderId);
     if (!purchaseOrder) {
       throw new NotFoundError("Purchase order not found");
@@ -69,7 +70,7 @@ export class InvoiceService {
       }))
     );
 
-    return this.repository.createWithItems(
+    const invoice = await this.repository.createWithItems(
       {
         invoiceNumber,
         purchaseOrderId: purchaseOrder.id,
@@ -92,6 +93,16 @@ export class InvoiceService {
         totalAmount: lineTotals.totalAmount,
       }))
     );
+
+    await recordAudit({
+      userId: createdById,
+      action: "INVOICE_GENERATED",
+      entityType: "Invoice",
+      entityId: invoice.id,
+      newValue: { invoiceNumber: invoice.invoiceNumber, totalAmount: invoice.totalAmount },
+    });
+
+    return invoice;
   }
 
   async getInvoiceById(id: string) {

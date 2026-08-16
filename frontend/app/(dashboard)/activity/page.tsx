@@ -1,35 +1,60 @@
 "use client";
 
-import React, { useState } from "react";
-import { FileText, CheckCircle, Receipt, Building, Info } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { FileText, CheckCircle, Receipt, Building, ShoppingCart } from "lucide-react";
 import styles from "./activity.module.css";
+import { fetchActivityLogs } from "@/lib/data";
 
-type EntityType = "RFQ" | "Approvals" | "Invoices" | "Vendors";
+type FilterTab = "All" | "RFQ" | "Quotation" | "PurchaseOrder" | "Invoice" | "Vendor";
 
 interface ActivityLog {
   id: string;
-  entityType: EntityType;
-  description: React.ReactNode;
+  entityType: string;
+  description: string;
   timestamp: string;
 }
 
-import { MOCK_ACTIVITY_LOGS } from "@/lib/mockData";
-type FilterTab = "All" | EntityType;
+const TABS: FilterTab[] = ["All", "RFQ", "Quotation", "PurchaseOrder", "Invoice", "Vendor"];
+
+const ICON_CLASS: Record<string, string> = {
+  RFQ: styles.RFQ,
+  Quotation: styles.Approvals,
+  PurchaseOrder: styles.RFQ,
+  Invoice: styles.Invoices,
+  Vendor: styles.Vendors,
+};
 
 export default function ActivityLogsPage() {
   const [activeTab, setActiveTab] = useState<FilterTab>("All");
-  const [logs, setLogs] = useState(MOCK_ACTIVITY_LOGS);
+  const [logs, setLogs] = useState<ActivityLog[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredLogs = logs.filter(log => 
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await fetchActivityLogs();
+        setLogs(data);
+      } catch (error) {
+        console.error("Failed to load activity logs", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  const filteredLogs = logs.filter(log =>
     activeTab === "All" || log.entityType === activeTab
   );
 
-  const getEntityIcon = (type: EntityType) => {
+  const getEntityIcon = (type: string) => {
     switch (type) {
       case "RFQ": return <FileText size={20} />;
-      case "Approvals": return <CheckCircle size={20} />;
-      case "Invoices": return <Receipt size={20} />;
-      case "Vendors": return <Building size={20} />;
+      case "Quotation": return <CheckCircle size={20} />;
+      case "PurchaseOrder": return <ShoppingCart size={20} />;
+      case "Invoice": return <Receipt size={20} />;
+      case "Vendor": return <Building size={20} />;
+      default: return <FileText size={20} />;
     }
   };
 
@@ -45,24 +70,35 @@ export default function ActivityLogsPage() {
 
       {/* Tabs */}
       <div className={styles.tabsRow}>
-        {(["All", "RFQ", "Approvals", "Invoices", "Vendors"] as FilterTab[]).map(tab => (
-          <button 
+        {TABS.map(tab => (
+          <button
             key={tab}
             className={`${styles.tabBtn} ${activeTab === tab ? styles.activeTab : ""}`}
             onClick={() => setActiveTab(tab)}
           >
-            {tab}
+            {tab === "PurchaseOrder" ? "Purchase Orders" : tab}
           </button>
         ))}
       </div>
 
       {/* Timeline List */}
       <div className={styles.timelineContainer}>
-        {filteredLogs.length > 0 ? (
+        {loading ? (
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "60px" }}>
+            <div style={{
+              width: "40px",
+              height: "40px",
+              border: "3px solid rgba(255, 255, 255, 0.1)",
+              borderRadius: "50%",
+              borderTopColor: "#10b981",
+              animation: "spin 1s ease-in-out infinite"
+            }}></div>
+          </div>
+        ) : filteredLogs.length > 0 ? (
           <div className={styles.timelineList}>
             {filteredLogs.map(log => (
               <div key={log.id} className={styles.timelineItem}>
-                <div className={`${styles.iconWrapper} ${styles[log.entityType]}`}>
+                <div className={`${styles.iconWrapper} ${ICON_CLASS[log.entityType] ?? styles.RFQ}`}>
                   {getEntityIcon(log.entityType)}
                 </div>
                 <div className={styles.contentWrapper}>
@@ -77,17 +113,6 @@ export default function ActivityLogsPage() {
             No activity logs found for this filter.
           </div>
         )}
-      </div>
-
-      {/* Backend Reminder Banner */}
-      <div className={styles.infoBanner}>
-        <div className={styles.infoBannerText}>
-          <Info size={20} color="#3b82f6" style={{ flexShrink: 0, marginTop: "2px" }} />
-          <div>
-            <strong>Backend Implementation Note:</strong><br/>
-            Audit logs must be immutable. These entries must be write-once, with no edit or delete functionality. Your DB schema should reflect this (no soft-delete on log records).
-          </div>
-        </div>
       </div>
     </div>
   );

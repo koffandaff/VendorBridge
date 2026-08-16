@@ -104,7 +104,15 @@ export class RfqRepository {
     });
   }
 
-  async list(filters: RfqQueryFilters) {
+  async findUserVendorId(userId: string): Promise<string | null> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { vendorId: true },
+    });
+    return user?.vendorId ?? null;
+  }
+
+  async list(filters: RfqQueryFilters, vendorId?: string) {
     const {
       search,
       status,
@@ -118,6 +126,10 @@ export class RfqRepository {
 
     if (status) {
       where.status = status;
+    }
+
+    if (vendorId) {
+      where.invitedVendors = { some: { vendorId } };
     }
 
     if (search) {

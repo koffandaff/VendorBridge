@@ -20,7 +20,10 @@ export class InvoiceController {
 
   createInvoice = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const invoice = await this.service.createInvoice(req.body as CreateInvoiceInput);
+      const invoice = await this.service.createInvoice(
+        req.body as CreateInvoiceInput,
+        req.user!.id
+      );
       sendCreated(res, invoice, "Invoice generated successfully");
     } catch (error) {
       next(error);

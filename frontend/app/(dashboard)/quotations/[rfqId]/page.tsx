@@ -4,11 +4,12 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
+import type { Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import toast from "react-hot-toast";
 import styles from "./quote-page.module.css";
-import { fetchRFQById, RFQ, RFQItem } from "@/lib/data";
+import { createQuotation, fetchRFQById, RFQ, RFQItem } from "@/lib/data";
 
 const itemSchema = z.object({
   id: z.string(),
@@ -40,7 +41,7 @@ export default function SubmitQuotationPage() {
     reset,
     formState: { errors, isSubmitting }
   } = useForm<QuoteFormValues>({
-    resolver: zodResolver(quoteSchema) as any,
+    resolver: zodResolver(quoteSchema) as unknown as Resolver<QuoteFormValues>,
     defaultValues: {
       items: [],
       taxPercentage: 18,
@@ -111,11 +112,23 @@ export default function SubmitQuotationPage() {
   }, [watchItems, watchTax, rfq]);
 
   const onSubmit = async (data: QuoteFormValues, isDraft: boolean) => {
-    console.log(`Submitting Quotation (Draft: ${isDraft}):`, data);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 800));
-    toast.success(isDraft ? "Draft saved successfully!" : "Quotation submitted successfully!");
-    router.push("/rfqs");
+    try {
+      await createQuotation({
+        rfqId,
+        items: data.items.map((item) => ({
+          rfqItemId: item.id,
+          unitPrice: item.unitPrice,
+          deliveryDays: item.deliveryDays,
+        })),
+        taxPercentage: data.taxPercentage,
+        notes: data.notes,
+        isDraft,
+      });
+      toast.success(isDraft ? "Draft saved successfully!" : "Quotation submitted successfully!");
+      router.push("/quotations");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to submit quotation");
+    }
   };
 
   if (loading) {
@@ -264,7 +277,7 @@ export default function SubmitQuotationPage() {
               type="button"
               className={styles.submitButton} 
               style={{ background: "transparent", border: "1px solid #e2e8f0", color: "#e2e8f0" }}
-              onClick={handleSubmit((data: any) => onSubmit(data, false))}
+              onClick={handleSubmit((data: QuoteFormValues) => onSubmit(data, false))}
               disabled={isSubmitting}
             >
               {isSubmitting ? "Submitting..." : "Submit Quotation"}
@@ -272,7 +285,7 @@ export default function SubmitQuotationPage() {
             <button 
               type="button"
               className={styles.saveDraftButton}
-              onClick={handleSubmit((data: any) => onSubmit(data, true))}
+              onClick={handleSubmit((data: QuoteFormValues) => onSubmit(data, true))}
               disabled={isSubmitting}
             >
               Save Draft

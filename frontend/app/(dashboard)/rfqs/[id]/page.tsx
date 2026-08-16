@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
-import { fetchRFQById, RFQ } from "@/lib/data";
+import { ArrowLeft, Send, XCircle } from "lucide-react";
+import { fetchRFQById, updateRfqStatus, RFQ } from "@/lib/data";
+import toast from "react-hot-toast";
 
 export default function RFQViewPage() {
   const router = useRouter();
@@ -13,11 +14,15 @@ export default function RFQViewPage() {
   const [rfq, setRfq] = useState<RFQ | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const loadRfq = async () => {
+    const data = await fetchRFQById(rfqId);
+    setRfq(data || null);
+  };
+
   useEffect(() => {
     const loadData = async () => {
       try {
-        const data = await fetchRFQById(rfqId);
-        setRfq(data || null);
+        await loadRfq();
       } catch (error) {
         console.error("Failed to load RFQ", error);
       } finally {
@@ -26,6 +31,28 @@ export default function RFQViewPage() {
     };
     if (rfqId) loadData();
   }, [rfqId]);
+
+  const handleOpen = async () => {
+    if (!rfq) return;
+    try {
+      await updateRfqStatus(rfq.id, "OPEN");
+      toast.success(`RFQ ${rfq.number} opened for quotes`);
+      await loadRfq();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to open RFQ");
+    }
+  };
+
+  const handleClose = async () => {
+    if (!rfq) return;
+    try {
+      await updateRfqStatus(rfq.id, "CLOSED");
+      toast.success(`RFQ ${rfq.number} closed`);
+      await loadRfq();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to close RFQ");
+    }
+  };
 
   if (loading) {
     return (
@@ -64,16 +91,43 @@ export default function RFQViewPage() {
           <h1 style={{ fontSize: "32px", fontWeight: 800, background: "linear-gradient(to right, #fff, #cbd5e1)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
             {rfq.title}
           </h1>
-          <p style={{ fontSize: "16px", color: "#94a3b8" }}>ID: {rfq.id} &mdash; Deadline: {rfq.deadline}</p>
+          <p style={{ fontSize: "16px", color: "#94a3b8" }}>{rfq.number} &mdash; Deadline: {rfq.deadline}</p>
         </div>
-        <button 
-          onClick={() => router.back()}
-          style={{ background: "transparent", border: "1px solid rgba(255, 255, 255, 0.1)", color: "#f8fafc", padding: "10px 16px", borderRadius: "10px", fontSize: "14px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
-        >
-          <ArrowLeft size={16} />
-          <span>Back</span>
-        </button>
+        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+          {rfq.rawStatus === "DRAFT" && (
+            <button
+              onClick={handleOpen}
+              style={{ background: "linear-gradient(135deg, #10b981, #059669)", border: "none", color: "#fff", padding: "10px 16px", borderRadius: "10px", fontSize: "14px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
+            >
+              <Send size={16} />
+              <span>Open RFQ</span>
+            </button>
+          )}
+          {rfq.rawStatus === "OPEN" && (
+            <button
+              onClick={handleClose}
+              style={{ background: "transparent", border: "1px solid rgba(239, 68, 68, 0.4)", color: "#ef4444", padding: "10px 16px", borderRadius: "10px", fontSize: "14px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
+            >
+              <XCircle size={16} />
+              <span>Close RFQ</span>
+            </button>
+          )}
+          <button
+            onClick={() => router.back()}
+            style={{ background: "transparent", border: "1px solid rgba(255, 255, 255, 0.1)", color: "#f8fafc", padding: "10px 16px", borderRadius: "10px", fontSize: "14px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
+          >
+            <ArrowLeft size={16} />
+            <span>Back</span>
+          </button>
+        </div>
       </div>
+
+      {rfq.rawStatus !== "DRAFT" && (
+        <div style={{ background: "rgba(30, 41, 59, 0.4)", backdropFilter: "blur(12px)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "20px", padding: "32px" }}>
+          <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#f8fafc", borderBottom: "1px solid rgba(255, 255, 255, 0.05)", paddingBottom: "16px", marginBottom: "24px" }}>Specifications</h2>
+          <p style={{ color: "#e2e8f0", fontSize: "15px", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{rfq.description || "—"}</p>
+        </div>
+      )}
 
       <div style={{ background: "rgba(30, 41, 59, 0.4)", backdropFilter: "blur(12px)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "20px", padding: "32px" }}>
         <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#f8fafc", borderBottom: "1px solid rgba(255, 255, 255, 0.05)", paddingBottom: "16px", marginBottom: "24px" }}>RFQ Details</h2>

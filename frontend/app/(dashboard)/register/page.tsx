@@ -4,6 +4,14 @@ import React, { useState } from "react";
 import { User, UserPlus } from "lucide-react";
 import styles from "./register.module.css";
 import toast from "react-hot-toast";
+import { registerUser } from "@/lib/data";
+
+const ROLE_MAP: Record<string, "ADMIN" | "PROCUREMENT_OFFICER" | "APPROVER" | "VENDOR"> = {
+  "Vendor": "VENDOR",
+  "Procurement Officer": "PROCUREMENT_OFFICER",
+  "Manager/Approver": "APPROVER",
+  "Admin": "ADMIN",
+};
 
 export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -28,24 +36,30 @@ export default function RegisterPage() {
     e.preventDefault();
     setIsLoading(true);
 
-    // Mock API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    setIsLoading(false);
-    toast.success("User successfully registered!");
-    
-    // Reset form
-    setFormData({
-      firstName: "",
-      lastName: "",
-      email: "",
-      phone: "",
-      jobRole: "Vendor",
-      dept: "",
-      country: "",
-      additionalInfo: ""
-    });
-    setProfileImage(null);
+    try {
+      await registerUser({
+        name: `${formData.firstName} ${formData.lastName}`.trim(),
+        email: formData.email,
+        phone: formData.phone || undefined,
+        role: ROLE_MAP[formData.jobRole] ?? "VENDOR",
+      });
+      toast.success("User successfully registered!");
+      setFormData({
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        jobRole: "Vendor",
+        dept: "",
+        country: "",
+        additionalInfo: ""
+      });
+      setProfileImage(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to register user");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

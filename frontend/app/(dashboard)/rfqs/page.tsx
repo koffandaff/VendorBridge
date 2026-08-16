@@ -2,266 +2,211 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, useFieldArray } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import { Search, Plus, Eye, GitCompareArrows, Send, XCircle } from "lucide-react";
+import styles from "./rfqs-list.module.css";
+import { fetchRFQs, updateRfqStatus, RFQ, RFQStatus } from "@/lib/data";
 import toast from "react-hot-toast";
-import { Plus, Trash2 } from "lucide-react";
-import styles from "./rfqs-page.module.css";
-import { fetchVendors, Vendor } from "@/lib/data";
 
-const rfqSchema = z.object({
-  title: z.string().min(3, "Title is required"),
-  category: z.string().min(1, "Category is required"),
-  deadline: z.string().min(1, "Deadline is required"),
-  instructions: z.string().min(10, "Provide detailed instructions"),
-  items: z.array(z.object({
-    itemName: z.string().min(1, "Item name required"),
-    qty: z.coerce.number().positive("Must be > 0"),
-    unit: z.string().min(1, "Unit required"),
-  })).min(1, "Add at least one item"),
-  vendors: z.array(z.string()).min(1, "Select at least one vendor"),
-});
+type FilterTab = "All" | "Draft" | "Sent" | "Quotes Received" | "Closed";
 
-type RFQFormValues = z.infer<typeof rfqSchema>;
+const TABS: FilterTab[] = ["All", "Draft", "Sent", "Quotes Received", "Closed"];
 
-export default function CreateRFQPage() {
+export default function RFQListPage() {
   const router = useRouter();
-  const [availableVendors, setAvailableVendors] = useState<Vendor[]>([]);
+  const [rfqs, setRfqs] = useState<RFQ[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState<FilterTab>("All");
 
-  const {
-    register,
-    control,
-    handleSubmit,
-    watch,
-    setValue,
-    formState: { errors, isSubmitting }
-  } = useForm<RFQFormValues>({
-    resolver: zodResolver(rfqSchema) as any,
-    defaultValues: {
-      items: [{ itemName: "", qty: 1, unit: "pcs" }],
-      vendors: [],
-    }
-  });
-
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: "items"
-  });
-
-  const watchVendors = watch("vendors");
+  const loadRfqs = async () => {
+    const data = await fetchRFQs();
+    setRfqs(data);
+  };
 
   useEffect(() => {
-    const loadVendors = async () => {
+    const loadData = async () => {
       try {
-        const data = await fetchVendors();
-        setAvailableVendors(data.filter(v => v.status === "Active"));
+        await loadRfqs();
       } catch (error) {
-        console.error("Failed to load vendors", error);
+        console.error("Failed to load RFQs", error);
       } finally {
         setLoading(false);
       }
     };
-    loadVendors();
+    loadData();
   }, []);
 
-  const toggleVendor = (vendorId: string) => {
-    const current = watchVendors || [];
-    if (current.includes(vendorId)) {
-      setValue("vendors", current.filter(id => id !== vendorId), { shouldValidate: true });
-    } else {
-      setValue("vendors", [...current, vendorId], { shouldValidate: true });
+  const counts: Record<FilterTab, number> = {
+    All: rfqs.length,
+    Draft: rfqs.filter((rfq) => rfq.status === "Draft").length,
+    Sent: rfqs.filter((rfq) => rfq.status === "Sent").length,
+    "Quotes Received": rfqs.filter((rfq) => rfq.status === "Quotes Received").length,
+    Closed: rfqs.filter((rfq) => rfq.status === "Closed").length,
+  };
+
+  const filteredRFQs = rfqs.filter((rfq) => {
+    const matchesTab = activeTab === "All" || rfq.status === activeTab;
+    const lowerQuery = searchQuery.toLowerCase();
+    const matchesSearch =
+      rfq.title.toLowerCase().includes(lowerQuery) ||
+      rfq.number.toLowerCase().includes(lowerQuery);
+    return matchesTab && matchesSearch;
+  });
+
+  const getStatusClass = (status: RFQStatus) => {
+    switch (status) {
+      case "Draft": return styles.badgeDraft;
+      case "Sent": return styles.badgeSent;
+      case "Quotes Received": return styles.badgeQuotes;
+      case "Closed": return styles.badgeClosed;
+      default: return "";
     }
   };
 
-  const onSubmit = async (data: RFQFormValues) => {
-    console.log("Submitting RFQ:", data);
-    await new Promise(resolve => setTimeout(resolve, 800));
-    toast.success("RFQ Created & Invites Sent!");
-    router.push("/dashboard");
+  const handleOpen = async (rfq: RFQ) => {
+    try {
+      await updateRfqStatus(rfq.id, "OPEN");
+      toast.success(`RFQ ${rfq.number} opened for quotes`);
+      await loadRfqs();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to open RFQ");
+    }
   };
+
+  const handleClose = async (rfq: RFQ) => {
+    try {
+      await updateRfqStatus(rfq.id, "CLOSED");
+      toast.success(`RFQ ${rfq.number} closed`);
+      await loadRfqs();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to close RFQ");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", minHeight: "300px" }}>
+        <div style={{
+          width: "40px",
+          height: "40px",
+          border: "3px solid rgba(255, 255, 255, 0.1)",
+          borderRadius: "50%",
+          borderTopColor: "#10b981",
+          animation: "spin 1s ease-in-out infinite"
+        }}></div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>
-      {/* Header Row */}
       <div className={styles.headerRow}>
         <div className={styles.headerLeft}>
-          <h1 className={styles.title}>Create RFQ's</h1>
-          <p className={styles.subtitle}>New request for quotation</p>
+          <h1 className={styles.title}>RFQ&apos;s</h1>
+          <p className={styles.subtitle}>Create and manage requests for quotation</p>
         </div>
+        <button className={styles.addButton} onClick={() => router.push("/rfqs/new")}>
+          <Plus size={18} />
+          <span>New RFQ</span>
+        </button>
       </div>
 
-      <div className={styles.formCard}>
-        {/* Wireframe Stepper */}
-        <div className={styles.stepperContainer}>
-          <div className={styles.stepperLine}></div>
-          <div className={`${styles.stepItem} ${styles.stepCurrent}`}>
-            <div className={styles.stepIcon}>1</div>
-            <span className={styles.stepLabel}>RFQ Details</span>
-          </div>
-          <div className={`${styles.stepItem} ${styles.stepCurrent}`}>
-            <div className={styles.stepIcon}>2</div>
-            <span className={styles.stepLabel}>Add Items</span>
-          </div>
-          <div className={`${styles.stepItem} ${styles.stepCurrent}`}>
-            <div className={styles.stepIcon}>3</div>
-            <span className={styles.stepLabel}>Vendors</span>
-          </div>
+      <div className={styles.searchAndFilter}>
+        <div className={styles.searchBar}>
+          <Search className={styles.searchIcon} size={20} />
+          <input
+            type="text"
+            className={styles.searchInput}
+            placeholder="Search by RFQ number or title..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
 
-        <form onSubmit={handleSubmit((data: any) => onSubmit(data))}>
-          <div className={styles.gridContainer}>
-            
-            {/* Left Column: Details */}
-            <div>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>RFQ Title</label>
-                <input 
-                  type="text" 
-                  className={`${styles.formInput} ${errors.title ? styles.error : ""}`}
-                  placeholder="e.g. Office Furniture Procurement"
-                  {...register("title")}
-                />
-                {errors.title && <span className={styles.formError}>{errors.title.message}</span>}
-              </div>
+        <div className={styles.tabsRow}>
+          {TABS.map((tab) => (
+            <button
+              key={tab}
+              className={`${styles.tabBtn} ${activeTab === tab ? styles.activeTab : ""}`}
+              onClick={() => setActiveTab(tab)}
+            >
+              {tab} ({counts[tab]})
+            </button>
+          ))}
+        </div>
 
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Category</label>
-                <select 
-                  className={`${styles.formSelect} ${errors.category ? styles.error : ""}`}
-                  {...register("category")}
-                >
-                  <option value="">Select category...</option>
-                  <option value="Furniture">Furniture</option>
-                  <option value="IT Hardware">IT Hardware</option>
-                  <option value="Stationery">Stationery</option>
-                  <option value="Construction">Construction</option>
-                  <option value="Logistics">Logistics</option>
-                  <option value="Other">Other</option>
-                </select>
-                {errors.category && <span className={styles.formError}>{errors.category.message}</span>}
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Deadline</label>
-                <input 
-                  type="date" 
-                  className={`${styles.formInput} ${errors.deadline ? styles.error : ""}`}
-                  {...register("deadline")}
-                />
-                {errors.deadline && <span className={styles.formError}>{errors.deadline.message}</span>}
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Instructions / Details</label>
-                <textarea 
-                  className={`${styles.formTextarea} ${errors.instructions ? styles.error : ""}`}
-                  placeholder="Specific requirements, quality standards, or terms..."
-                  {...register("instructions")}
-                />
-                {errors.instructions && <span className={styles.formError}>{errors.instructions.message}</span>}
-              </div>
-            </div>
-
-            {/* Right Column: Items & Vendors */}
-            <div>
-              {/* Items Section */}
-              <div className={styles.sectionTitle}>Requested Items</div>
-              <div className={styles.itemsContainer}>
-                {fields.map((field, index) => (
-                  <div key={field.id} className={styles.itemRow}>
-                    <input 
-                      type="text" 
-                      placeholder="Item Name" 
-                      className={`${styles.formInput} ${errors.items?.[index]?.itemName ? styles.error : ""}`}
-                      {...register(`items.${index}.itemName`)}
-                    />
-                    <input 
-                      type="number" 
-                      placeholder="Qty" 
-                      className={`${styles.formInput} ${errors.items?.[index]?.qty ? styles.error : ""}`}
-                      {...register(`items.${index}.qty`)}
-                    />
-                    <input 
-                      type="text" 
-                      placeholder="Unit (e.g. pcs)" 
-                      className={`${styles.formInput} ${errors.items?.[index]?.unit ? styles.error : ""}`}
-                      {...register(`items.${index}.unit`)}
-                    />
-                    <button 
-                      type="button" 
-                      className={styles.removeButton}
-                      onClick={() => remove(index)}
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
-                ))}
-                {errors.items?.root && <span className={styles.formError}>{errors.items.root.message}</span>}
-                <button 
-                  type="button" 
-                  className={styles.addButton}
-                  onClick={() => append({ itemName: "", qty: 1, unit: "pcs" })}
-                >
-                  <Plus size={16} /> Add Item
-                </button>
-              </div>
-
-              {/* Vendors Section */}
-              <div className={styles.sectionTitle}>Assign Vendors</div>
-              <div className={styles.vendorsList}>
-                {loading ? (
-                  <span style={{ color: "#94a3b8", fontSize: "14px" }}>Loading vendors...</span>
-                ) : availableVendors.length === 0 ? (
-                  <span style={{ color: "#94a3b8", fontSize: "14px" }}>No active vendors available.</span>
-                ) : (
-                  availableVendors.map(vendor => {
-                    const isSelected = (watchVendors || []).includes(vendor.id);
-                    return (
-                      <div 
-                        key={vendor.id} 
-                        className={`${styles.vendorItem} ${isSelected ? styles.selected : ""}`}
-                        onClick={() => toggleVendor(vendor.id)}
-                      >
-                        <input 
-                          type="checkbox" 
-                          className={styles.checkbox}
-                          checked={isSelected}
-                          readOnly
-                        />
-                        <div className={styles.vendorInfo}>
-                          <span className={styles.vendorName}>{vendor.name}</span>
-                          <span className={styles.vendorCategory}>{vendor.category}</span>
-                        </div>
+        <div className={styles.tableContainer}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>RFQ Number</th>
+                <th>Title</th>
+                <th>Category</th>
+                <th>Deadline</th>
+                <th>Vendors</th>
+                <th>Quotes</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredRFQs.length > 0 ? (
+                filteredRFQs.map((rfq) => (
+                  <tr key={rfq.id}>
+                    <td style={{ fontWeight: 600, color: "#94a3b8" }}>{rfq.number}</td>
+                    <td style={{ fontWeight: 600, color: "#f8fafc" }}>{rfq.title}</td>
+                    <td>{rfq.category}</td>
+                    <td>{rfq.deadline}</td>
+                    <td>{rfq.vendorsAssignedCount}</td>
+                    <td>{rfq.quotesReceivedCount}</td>
+                    <td>
+                      <span className={`${styles.badge} ${getStatusClass(rfq.status)}`}>
+                        {rfq.status}
+                      </span>
+                    </td>
+                    <td>
+                      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                        <button className={styles.viewButton} onClick={() => router.push(`/rfqs/${rfq.id}`)}>
+                          <Eye size={14} /> View
+                        </button>
+                        {rfq.rawStatus === "DRAFT" && (
+                          <button
+                            className={`${styles.viewButton} ${styles.openButton}`}
+                            onClick={() => handleOpen(rfq)}
+                          >
+                            <Send size={14} /> Open
+                          </button>
+                        )}
+                        {rfq.rawStatus === "OPEN" && (
+                          <button
+                            className={`${styles.viewButton} ${styles.closeButton}`}
+                            onClick={() => handleClose(rfq)}
+                          >
+                            <XCircle size={14} /> Close
+                          </button>
+                        )}
+                        {rfq.quotesReceivedCount > 0 && (
+                          <button
+                            className={`${styles.viewButton} ${styles.compareButton}`}
+                            onClick={() => router.push(`/rfqs/${rfq.id}/compare`)}
+                          >
+                            <GitCompareArrows size={14} /> Compare
+                          </button>
+                        )}
                       </div>
-                    );
-                  })
-                )}
-              </div>
-              {errors.vendors && <span className={styles.formError}>{errors.vendors.message}</span>}
-            </div>
-
-          </div>
-          
-          <div className={styles.actionsRow}>
-            <button 
-              type="button"
-              className={styles.cancelButton} 
-              onClick={() => router.push("/dashboard")}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </button>
-            <button 
-              type="submit"
-              className={styles.submitButton} 
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Creating..." : "Create RFQ & Send Invites"}
-            </button>
-          </div>
-        </form>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={8} style={{ textAlign: "center", padding: "32px", color: "#64748b" }}>
+                    No RFQs found matching your criteria.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
