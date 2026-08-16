@@ -59,31 +59,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(() =>
     typeof window !== "undefined" ? readStoredUser() : null
   );
-  const [loading, setLoading] = useState(
-    () => typeof window !== "undefined" && !!getAccessToken() && !!getRefreshToken()
-  );
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    if (!getAccessToken() || !getRefreshToken()) {
-      return;
-    }
+    const checkSession = async () => {
+      if (!getAccessToken() || !getRefreshToken()) {
+        setLoading(false);
+        return;
+      }
 
-    api
-      .get<AuthUserDto>("/auth/me")
-      .then((me) => {
+      try {
+        const me = await api.get<AuthUserDto>("/auth/me");
         const freshUser = toFrontendUser(me);
         setUser(freshUser);
         storeUser(freshUser);
-      })
-      .catch(() => {
+      } catch {
         setUser(null);
         clearTokens();
         window.localStorage.removeItem("auth_user");
-      })
-      .finally(() => {
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+
+    checkSession();
   }, []);
 
   const login = useCallback(
