@@ -1,6 +1,6 @@
-import { Prisma } from "@prisma/client";
+import { Decimal } from "@prisma/client/runtime/library.js";
 
-export type DecimalValue = number | string | Prisma.Decimal;
+export type DecimalValue = number | string | Decimal;
 
 export interface ItemCalculationInput {
   quantity: DecimalValue;
@@ -9,28 +9,28 @@ export interface ItemCalculationInput {
 }
 
 export interface LineItemTotals {
-  subtotal: Prisma.Decimal;
-  taxAmount: Prisma.Decimal;
-  totalAmount: Prisma.Decimal;
-  cgstAmount?: Prisma.Decimal;
-  sgstAmount?: Prisma.Decimal;
-  igstAmount?: Prisma.Decimal;
+  subtotal: Decimal;
+  taxAmount: Decimal;
+  totalAmount: Decimal;
+  cgstAmount?: Decimal;
+  sgstAmount?: Decimal;
+  igstAmount?: Decimal;
 }
 
 export interface DocumentTotals {
-  subtotal: Prisma.Decimal;
-  taxAmount: Prisma.Decimal;
-  totalAmount: Prisma.Decimal;
+  subtotal: Decimal;
+  taxAmount: Decimal;
+  totalAmount: Decimal;
 }
 
-function toDecimal(val: DecimalValue | null | undefined): Prisma.Decimal {
+function toDecimal(val: DecimalValue | null | undefined): Decimal {
   if (val === null || val === undefined) {
-    return new Prisma.Decimal(0);
+    return new Decimal(0);
   }
-  if (val instanceof Prisma.Decimal) {
+  if (val instanceof Decimal) {
     return val;
   }
-  return new Prisma.Decimal(val.toString());
+  return new Decimal(val.toString());
 }
 
 /**
@@ -64,8 +64,8 @@ export function calculateLineTotals(input: ItemCalculationInput): LineItemTotals
 export function calculateDocumentTotals(
   items: { subtotal: DecimalValue; taxAmount: DecimalValue }[]
 ): DocumentTotals {
-  let docSubtotal = new Prisma.Decimal(0);
-  let docTax = new Prisma.Decimal(0);
+  let docSubtotal = new Decimal(0);
+  let docTax = new Decimal(0);
 
   for (const item of items) {
     const itemSub = toDecimal(item.subtotal);
