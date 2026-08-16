@@ -1,4 +1,4 @@
-# Hackathon Monorepo Dhruvil07@23
+# Hackathon Monorepo
 
 Foundational monorepo for the hackathon application. Clean and ready for feature development.
 
