@@ -1,8 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { 
   LayoutDashboard, 
   Users, 
@@ -14,10 +14,15 @@ import {
   BarChart3, 
   Activity,
   Box,
-  UserPlus
+  UserPlus,
+  UserCog,
+  ChevronDown,
+  KeyRound,
+  LogOut
 } from "lucide-react";
 import styles from "./dashboard.module.css";
 import ProtectedRoute from "@/components/shared/ProtectedRoute";
+import NotificationBell from "@/components/shared/NotificationBell";
 import { useAuth } from "@/lib/AuthContext";
 import { Toaster } from "react-hot-toast";
 
@@ -31,6 +36,7 @@ const NAV_LINKS = [
   { name: "Invoices", href: "/invoices", icon: Receipt },
   { name: "Reports", href: "/reports", icon: BarChart3 },
   { name: "Activity", href: "/activity", icon: Activity },
+  { name: "Users", href: "/users", icon: UserCog },
   { name: "User Registration", href: "/register", icon: UserPlus },
 ];
 
@@ -38,12 +44,31 @@ const ROLE_ACCESS: Record<string, string[]> = {
   "Procurement Officer": ["Dashboard", "RFQ's", "Quotations", "Purchase orders", "Invoices"],
   "Vendor": ["Dashboard", "Quotations", "RFQ's", "Purchase orders", "Invoices"],
   "Manager/Approver": ["Dashboard", "Approvals"],
-  "Admin": ["Dashboard", "Vendors", "Reports", "Activity", "Approvals", "User Registration"],
+  "Admin": ["Dashboard", "Vendors", "Reports", "Activity", "Approvals", "Users", "User Registration"],
 };
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, logout } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleMouseDown = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleMouseDown);
+    return () => document.removeEventListener("mousedown", handleMouseDown);
+  }, [menuOpen]);
+
+  const handleLogout = async () => {
+    setMenuOpen(false);
+    await logout();
+  };
 
   const allowedLinks = NAV_LINKS.filter(link => {
     if (!user) return true;
@@ -83,17 +108,49 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {/* Top Bar */}
           <header className={styles.topBar}>
             {user && (
-              <div className={styles.userInfo} style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <span className={styles.userName}>{user.username}</span>
-                  <span className={styles.userRole}>{user.role}</span>
+              <div className={styles.topBarRight}>
+                <NotificationBell />
+                <div className={styles.userMenu} ref={menuRef}>
+                  <button
+                    className={styles.userMenuButton}
+                    onClick={() => setMenuOpen((prev) => !prev)}
+                    aria-label="User menu"
+                  >
+                    <span className={styles.userMenuAvatar}>
+                      {user.name?.charAt(0).toUpperCase() ?? "U"}
+                    </span>
+                    <span className={styles.userMenuInfo}>
+                      <span className={styles.userMenuName}>{user.name}</span>
+                      <span className={styles.userMenuRole}>{user.role}</span>
+                    </span>
+                    <ChevronDown size={16} className={styles.userMenuChevron} />
+                  </button>
+
+                  {menuOpen && (
+                    <div className={styles.userDropdown}>
+                      <div className={styles.userDropdownHeader}>
+                        <span className={styles.userDropdownName}>{user.name}</span>
+                        <span className={styles.userDropdownEmail}>{user.email}</span>
+                      </div>
+                      <div className={styles.userDropdownDivider} />
+                      <button
+                        className={styles.userDropdownItem}
+                        onClick={() => {
+                          setMenuOpen(false);
+                          router.push("/change-password");
+                        }}
+                      >
+                        <KeyRound size={15} />
+                        Change Password
+                      </button>
+                      <div className={styles.userDropdownDivider} />
+                      <button className={styles.userDropdownLogout} onClick={handleLogout}>
+                        <LogOut size={15} />
+                        Logout
+                      </button>
+                    </div>
+                  )}
                 </div>
-                <button 
-                  onClick={() => logout()} 
-                  style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#f87171', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}
-                >
-                  Logout
-                </button>
               </div>
             )}
             <div className={styles.windowControls}>

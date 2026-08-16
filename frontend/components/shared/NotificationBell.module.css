@@ -1,0 +1,196 @@
+.wrapper {
+  position: relative;
+}
+
+.bellButton {
+  position: relative;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #9ca3af;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.bellButton:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #e5e7eb;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9999px;
+  background: #10b981;
+  color: #0f1115;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #0f1115;
+}
+
+.panel {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  width: 360px;
+  max-width: calc(100vw - 32px);
+  background: #1a2333;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+  z-index: 100;
+  animation: slideDown 0.15s ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  gap: 12px;
+}
+
+.headerTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: #e5e7eb;
+}
+
+.markAllButton {
+  background: transparent;
+  border: none;
+  color: #10b981;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.markAllButton:hover:not(:disabled) {
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.markAllButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.list {
+  max-height: 380px;
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  padding: 12px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  font-family: inherit;
+}
+
+.item:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.unreadDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  flex-shrink: 0;
+  margin-top: 5px;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+}
+
+.itemContent {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.itemTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #9ca3af;
+}
+
+.unreadTitle {
+  color: #e5e7eb;
+}
+
+.itemMessage {
+  font-size: 13px;
+  color: #9ca3af;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.itemTime {
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.stateContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 16px;
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  border-top-color: #10b981;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.stateText {
+  padding: 40px 16px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 14px;
+}
