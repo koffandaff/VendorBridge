@@ -32,11 +32,17 @@ vendorRouter.post(
   controller.createCategory
 );
 
-vendorRouter.get("/categories", authenticate, controller.listCategories);
+vendorRouter.get(
+  "/categories",
+  authenticate,
+  requirePermission("vendors:manage", "procurement:view"),
+  controller.listCategories
+);
 
 vendorRouter.get(
   "/categories/:id",
   authenticate,
+  requirePermission("vendors:manage", "procurement:view"),
   validateRequest({ params: uuidParamSchema }),
   controller.getCategoryById
 );
@@ -74,6 +80,7 @@ vendorRouter.post(
 vendorRouter.get(
   "/:vendorId/contacts",
   authenticate,
+  requirePermission("vendors:manage", "procurement:view"),
   validateRequest({
     params: z.object({ vendorId: z.string().uuid("Invalid vendor ID format") }),
   }),
@@ -115,6 +122,7 @@ vendorRouter.post(
 vendorRouter.get(
   "/",
   authenticate,
+  requirePermission("vendors:manage", "procurement:view"),
   validateRequest({ query: vendorQuerySchema }),
   controller.listVendors
 );
@@ -122,6 +130,7 @@ vendorRouter.get(
 vendorRouter.get(
   "/:id",
   authenticate,
+  requirePermission("vendors:manage", "procurement:view"),
   validateRequest({ params: uuidParamSchema }),
   controller.getVendorById
 );

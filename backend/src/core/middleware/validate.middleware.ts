@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { type ZodSchema, ZodError } from "zod";
 import { ValidationError } from "../errors/AppError.js";
+import { sanitizeInput } from "../../shared/validators/sanitize.js";
 
 export interface RequestValidationSchemas {
   body?: ZodSchema;
@@ -11,6 +12,16 @@ export interface RequestValidationSchemas {
 export function validateRequest(schemas: RequestValidationSchemas) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     try {
+      if (req.body) {
+        req.body = sanitizeInput(req.body);
+      }
+      if (req.query) {
+        defineRequestProperty(req, "query", sanitizeInput(req.query));
+      }
+      if (req.params) {
+        defineRequestProperty(req, "params", sanitizeInput(req.params));
+      }
+
       if (schemas.body) {
         req.body = schemas.body.parse(req.body);
       }
@@ -35,8 +46,7 @@ export function validateRequest(schemas: RequestValidationSchemas) {
   };
 }
 
-// Express 5 defines req.query (and possibly req.params for some routers) as
-// getter-only properties, so plain assignment throws in strict mode.
+// Express 5 defines req.query (and possibly req.params) as getter-only properties.
 function defineRequestProperty(
   req: Request,
   key: "query" | "params",
