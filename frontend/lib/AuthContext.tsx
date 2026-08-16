@@ -63,7 +63,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
 
   useEffect(() => {
-    const boot = async () => {
+    const checkSession = async () => {
       if (!getAccessToken() || !getRefreshToken()) {
         setLoading(false);
         return;
@@ -82,7 +82,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setLoading(false);
       }
     };
-    void boot();
+
+    checkSession();
   }, []);
 
   const login = useCallback(
