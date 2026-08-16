@@ -1,28 +1,26 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { fetchQuotations, Quotation, QuotationStatus } from "@/lib/data";
+import { fetchRFQs, RFQ } from "@/lib/data";
 import styles from "./quotations-list.module.css";
 import { Search } from "lucide-react";
-
 import { useRouter } from "next/navigation";
-
-type FilterTab = "All" | QuotationStatus;
+import { useAuth } from "@/lib/AuthContext";
 
 export default function QuotationsListPage() {
   const router = useRouter();
-  const [quotations, setQuotations] = useState<Quotation[]>([]);
+  const { user } = useAuth();
+  const [rfqs, setRfqs] = useState<RFQ[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState<FilterTab>("All");
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const data = await fetchQuotations();
-        setQuotations(data);
+        const data = await fetchRFQs();
+        setRfqs(data);
       } catch (error) {
-        console.error("Failed to load quotations", error);
+        console.error("Failed to load RFQs", error);
       } finally {
         setLoading(false);
       }
@@ -30,131 +28,103 @@ export default function QuotationsListPage() {
     loadData();
   }, []);
 
-  // Compute counts for tabs
-  const counts = {
-    "All": quotations.length,
-    "Pending Review": quotations.filter(q => q.status === "Pending Review").length,
-    "Accepted": quotations.filter(q => q.status === "Accepted").length,
-    "Rejected": quotations.filter(q => q.status === "Rejected").length,
-  };
+  const isVendor = user?.role === "Vendor";
 
-  // Filter based on active tab and search query
-  const filteredQuotations = quotations.filter((quote) => {
-    const matchesTab = activeTab === "All" || quote.status === activeTab;
-    const lowerQuery = searchQuery.toLowerCase();
-    const matchesSearch = 
-      quote.rfqTitle.toLowerCase().includes(lowerQuery) ||
-      quote.vendorName.toLowerCase().includes(lowerQuery) ||
-      quote.id.toLowerCase().includes(lowerQuery);
-    return matchesTab && matchesSearch;
+  // Vendors see RFQs they need to bid on. Officers see RFQs that have received quotes to compare.
+  const displayRFQs = rfqs.filter((rfq) => {
+    if (isVendor) {
+      return rfq.status === "Sent" || rfq.status === "Quotes Received";
+    }
+    return rfq.quotesReceivedCount > 0;
   });
 
-  const getStatusBadgeClass = (status: QuotationStatus) => {
-    switch(status) {
-      case "Pending Review": return styles.badgePending;
-      case "Accepted": return styles.badgeAccepted;
-      case "Rejected": return styles.badgeRejected;
-      default: return "";
-    }
-  };
+  const filteredRFQs = displayRFQs.filter(
+    (rfq) => rfq.title.toLowerCase().includes(searchQuery.toLowerCase()) || rfq.id.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   if (loading) {
     return (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", minHeight: "300px" }}>
-        <div style={{
-          width: "40px",
-          height: "40px",
-          border: "3px solid rgba(255, 255, 255, 0.1)",
-          borderRadius: "50%",
-          borderTopColor: "#10b981",
-          animation: "spin 1s ease-in-out infinite"
-        }}></div>
+        <div style={{ width: "40px", height: "40px", border: "3px solid rgba(255, 255, 255, 0.1)", borderRadius: "50%", borderTopColor: "#10b981", animation: "spin 1s ease-in-out infinite" }}></div>
       </div>
     );
   }
 
   return (
     <div className={styles.container}>
-      {/* Header Row */}
       <div className={styles.headerRow}>
         <div className={styles.headerLeft}>
-          <h1 className={styles.title}>Quotations</h1>
-          <p className={styles.subtitle}>Review and manage vendor bids</p>
+          <h1 className={styles.title}>{isVendor ? "Submit Quotations" : "Compare Quotations"}</h1>
+          <p className={styles.subtitle}>
+            {isVendor ? "Review RFQs and submit your bids" : "Compare vendor quotations for active RFQs"}
+          </p>
         </div>
       </div>
 
-      {/* Main Filter & Table Section */}
       <div className={styles.searchAndFilter}>
-        
-        {/* Search Bar */}
         <div className={styles.searchBar}>
           <Search className={styles.searchIcon} size={20} />
           <input 
             type="text" 
             className={styles.searchInput} 
-            placeholder="Search by quote ID, RFQ title, or vendor name..." 
+            placeholder="Search by RFQ title or ID..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
 
-        {/* Filter Tabs */}
-        <div className={styles.tabsRow}>
-          {(["All", "Pending Review", "Accepted", "Rejected"] as FilterTab[]).map(tab => (
-            <button 
-              key={tab}
-              className={`${styles.tabBtn} ${activeTab === tab ? styles.activeTab : ""}`}
-              onClick={() => setActiveTab(tab)}
-            >
-              {tab} ({counts[tab]})
-            </button>
-          ))}
-        </div>
-
-        {/* Data Table */}
         <div className={styles.tableContainer}>
           <table className={styles.table}>
             <thead>
               <tr>
-                <th>Quote ID</th>
-                <th>RFQ Title</th>
-                <th>Vendor</th>
-                <th>Submitted On</th>
-                <th>Grand Total</th>
-                <th>Status</th>
+                <th>RFQ ID</th>
+                <th>Title</th>
+                <th>Deadline</th>
+                <th>Category</th>
+                {isVendor ? <th>My Status</th> : <th>Quotes Received</th>}
                 <th>Action</th>
               </tr>
             </thead>
             <tbody>
-              {filteredQuotations.length > 0 ? (
-                filteredQuotations.map(quote => (
-                  <tr key={quote.id}>
-                    <td style={{ fontWeight: 600, color: "#94a3b8" }}>{quote.id}</td>
-                    <td style={{ fontWeight: 600, color: "#f8fafc" }}>{quote.rfqTitle}</td>
-                    <td>{quote.vendorName}</td>
-                    <td>{quote.submittedAt}</td>
-                    <td style={{ fontWeight: 600, color: "#10b981" }}>
-                      ${quote.grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              {filteredRFQs.length > 0 ? (
+                filteredRFQs.map(rfq => (
+                  <tr key={rfq.id}>
+                    <td style={{ fontWeight: 600, color: "#94a3b8" }}>{rfq.id}</td>
+                    <td style={{ fontWeight: 600, color: "#f8fafc" }}>{rfq.title}</td>
+                    <td>{rfq.deadline}</td>
+                    <td>{rfq.category}</td>
+                    <td>
+                      {isVendor ? (
+                        <span style={{ color: "#f59e0b", fontWeight: 600 }}>Pending Submission</span>
+                      ) : (
+                        <span style={{ color: "#10b981", fontWeight: 600 }}>{rfq.quotesReceivedCount} Quotes</span>
+                      )}
                     </td>
                     <td>
-                      <span className={`${styles.badge} ${getStatusBadgeClass(quote.status)}`}>
-                        {quote.status}
-                      </span>
-                    </td>
-                    <td>
-                      <button 
-                        className={styles.viewButton}
-                        onClick={() => router.push(`/quotations/review/${quote.id}`)}
-                      >
-                        Review
-                      </button>
+                      {isVendor ? (
+                        <button 
+                          className={styles.viewButton}
+                          style={{ borderColor: "#10b981", color: "#10b981" }}
+                          onClick={() => router.push(`/quotations/${rfq.id}`)}
+                        >
+                          Submit Quote
+                        </button>
+                      ) : (
+                        <button 
+                          className={styles.viewButton}
+                          style={{ borderColor: "#3b82f6", color: "#3b82f6" }}
+                          onClick={() => router.push(`/rfqs/${rfq.id}/compare`)}
+                        >
+                          Compare Quotes
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: "center", padding: "32px", color: "#64748b" }}>
-                    No quotations found matching your criteria.
+                  <td colSpan={6} style={{ textAlign: "center", padding: "32px", color: "#64748b" }}>
+                    No RFQs found matching your criteria.
                   </td>
                 </tr>
               )}

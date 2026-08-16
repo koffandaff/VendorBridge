@@ -8,6 +8,7 @@ import { Search, Plus, X } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
 type FilterTab = "All" | "Active" | "Pending" | "Blocked";
@@ -28,6 +29,7 @@ const vendorSchema = z.object({
 type VendorFormValues = z.infer<typeof vendorSchema>;
 
 export default function VendorsPage() {
+  const router = useRouter();
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -188,7 +190,7 @@ export default function VendorsPage() {
                     <td>
                       <button 
                         className={styles.viewButton}
-                        onClick={() => console.log(`Navigate to /vendors/${vendor.id}`)}
+                        onClick={() => router.push(`/vendors/${vendor.id}`)}
                       >
                         View
                       </button>
