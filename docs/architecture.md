@@ -15,12 +15,19 @@
 backend/
   src/
     app.ts          Express app assembly (exported for tests/serverless reuse)
-    server.ts       HTTP server bootstrap (reads PORT, listens)
-    config/         runtime configuration loaders
-    core/           cross-cutting infrastructure: auth, errors, http, logger, middleware, rbac
-    modules/        feature modules (empty until features are introduced)
-    shared/         constants, helpers, types, utils, validators
-  prisma/           Prisma schema + migrations (no models yet)
+    server.ts       HTTP server bootstrap (reads env, listens)
+    config/         env validation (zod, fail-fast) + app constants
+    core/           cross-cutting infrastructure:
+                      auth/    JWT, bcrypt, OTP, tokens, request guards
+                      errors/  typed error classes + central error middleware
+                      http/    response envelope helpers
+                      logger/  structured JSON logging + request logger
+                      middleware/ request-ID, zod validation
+                      rbac/    role → permission map + permission guards
+    modules/        feature modules: auth/ (login, register, OTP, sessions)
+    shared/         Prisma client singleton, email (nodemailer + console fallback)
+    types/          Express type augmentations (requestId, user)
+  prisma/           Prisma schema + migrations
   tests/            backend tests (runner not chosen yet)
 frontend/
   app/              Next.js App Router: route groups (auth), (dashboard), api route handlers
@@ -39,6 +46,27 @@ packages/
 When a feature is introduced, `backend/src/modules/<feature>/` contains all layers of that feature
 (routes, controller, service, repository, schema, types, constants, index). Core infrastructure
 (auth, errors, http, logger, middleware, rbac) stays in `backend/src/core/` and is framework-agnostic.
+
+## Current backend capabilities
+
+- **Configuration**: `src/config/env.ts` validates all env vars with zod at startup (fail-fast);
+  secrets are never logged.
+- **Security middleware**: helmet, explicit CORS origins, request body limit, rate limiting,
+  request IDs, structured logs, centralized error handling.
+- **Authentication**: invite-only accounts (ADMIN registers users + sends OTP email), JWT access
+  tokens + opaque rotating refresh sessions, OTP flows (forgot/verify/reset), centralized in
+  `core/auth` with the business logic in `modules/auth`. See **[auth.md](auth.md)**.
+- **Authorization**: centralized `Role → Permission` map in `core/rbac` (Schema.md §45), enforced
+  via reusable `requirePermission(...)` guards.
+- **Observability**: single-line JSON logs with `requestId`, per-request duration and status.
+
+## Authentication-related decisions
+
+- Access tokens (JWT, ~15 min) are stateless; revocation happens at the refresh-session layer.
+- Tokens/OTPs are transmitted in request bodies/headers, not cookies (no CSRF surface to manage).
+- OTPs are sha256-hashed at rest, single use, and expire in 10 minutes.
+- Email is delivered via nodemailer; when SMTP is unset (dev only) emails print to the console —
+  SMTP is enforced in production at startup.
 
 ## Frontend feature convention
 
