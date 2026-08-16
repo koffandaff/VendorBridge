@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Search, FileText } from "lucide-react";
 import styles from "./po-page.module.css";
-import toast from "react-hot-toast";
+import { showLoading, showModalSuccess, showToastError, showToastSuccess, closeAlert } from "@/lib/alerts";
 
 import { acknowledgePurchaseOrder, createInvoice, fetchPurchaseOrders, updatePurchaseOrderStatus } from "@/lib/data";
 import type { PurchaseOrderDto } from "@/lib/types";
@@ -115,15 +115,18 @@ export default function PurchaseOrdersPage() {
 
   const handleGenerateInvoice = async (po: PurchaseOrderDto) => {
     setInvoiceLoadingId(po.id);
+    showLoading("Generating Invoice...");
     try {
       await createInvoice({
         purchaseOrderId: po.id,
         dueDate: toIsoDate(addDays(new Date(), 30).toISOString()),
       });
-      toast.success(`Invoice generated for ${po.poNumber}!`);
+      closeAlert();
+      await showModalSuccess(`Invoice generated for ${po.poNumber}!`);
       await loadPOs();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to generate invoice");
+      closeAlert();
+      showToastError(error instanceof Error ? error.message : "Failed to generate invoice");
     } finally {
       setInvoiceLoadingId(null);
     }
@@ -134,10 +137,10 @@ export default function PurchaseOrdersPage() {
     try {
       if (action === "ACKNOWLEDGE") {
         await acknowledgePurchaseOrder(po.id);
-        toast.success(`Purchase order ${po.poNumber} acknowledged!`);
+        showToastSuccess(`Purchase order ${po.poNumber} acknowledged!`);
       } else {
         await updatePurchaseOrderStatus(po.id, action);
-        toast.success(
+        showToastSuccess(
           action === "SENT"
             ? `Purchase order ${po.poNumber} marked as sent!`
             : `Purchase order ${po.poNumber} cancelled.`
@@ -145,7 +148,7 @@ export default function PurchaseOrdersPage() {
       }
       await loadPOs();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to update purchase order");
+      showToastError(error instanceof Error ? error.message : "Failed to update purchase order");
     } finally {
       setStatusLoading(null);
     }
