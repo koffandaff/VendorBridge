@@ -77,3 +77,8 @@ export function sendError(
   };
   return res.status(statusCode).json(responsePayload);
 }
+
+export function ok<T>(res: Response, data: T, statusCode = 200): Response {
+  // keep compatibility: ok() -> sendSuccess()
+  return sendSuccess(res, data, undefined, statusCode);
+}

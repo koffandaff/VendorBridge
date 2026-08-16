@@ -1,7 +1,7 @@
 import { app } from "./app.js";
+import { env } from "./config/env.js";
+import { logger } from "./core/logger/logger.js";
 
-const port = Number(process.env.PORT ?? 4000);
-
-app.listen(port, () => {
-  console.log(`[api] listening on http://localhost:${port}`);
+app.listen(env.PORT, () => {
+  logger.info("api listening", { port: env.PORT, url: `http://localhost:${env.PORT}` });
 });

@@ -15,26 +15,29 @@ import { prisma } from "./shared/prisma.js";
 
 export const app = express();
 
+app.disable("x-powered-by");
+
 // Baseline security & middleware setup (backend/rules.md §6)
 app.use(helmet());
+app.use(requestIdMiddleware);
+app.use(requestLoggerMiddleware);
 app.use(
   cors({
     origin: corsOrigins,
     credentials: true,
   })
 );
-app.use(requestIdMiddleware);
-app.use(requestLoggerMiddleware);
 app.use(express.json({ limit: BODY_LIMIT }));
 
 // Health Check Endpoint (backend/rules.md §23)
-app.get("/health", async (_req, res, next) => {
+app.get("/health", async (_req, res) => {
+  let database = "up";
   try {
     await prisma.$queryRaw`SELECT 1`;
-    res.json({ status: "ok", database: "healthy" });
-  } catch (error) {
-    next(error);
+  } catch {
+    database = "down";
   }
+  res.json({ status: "ok", database });
 });
 
 // API Routes (backend/rules.md §22)
