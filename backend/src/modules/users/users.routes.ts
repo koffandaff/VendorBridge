@@ -4,6 +4,8 @@ import { requirePermission } from "../../core/rbac/guards.js";
 import { validateRequest } from "../../core/middleware/validate.middleware.js";
 import { UserController } from "./users.controller.js";
 import {
+  createUserSchema,
+  resetPasswordSchema,
   userIdParamSchema,
   userQuerySchema,
   updateUserSchema,
@@ -12,6 +14,14 @@ import {
 
 export const usersRouter: Router = Router();
 const controller = new UserController();
+
+usersRouter.post(
+  "/",
+  authenticate,
+  requirePermission("users:manage"),
+  validateRequest({ body: createUserSchema }),
+  controller.createUser
+);
 
 usersRouter.get(
   "/",
@@ -51,4 +61,20 @@ usersRouter.post(
   requirePermission("users:manage"),
   validateRequest({ params: userIdParamSchema }),
   controller.resendInvite
+);
+
+usersRouter.patch(
+  "/:id/password",
+  authenticate,
+  requirePermission("users:manage"),
+  validateRequest({ params: userIdParamSchema, body: resetPasswordSchema }),
+  controller.resetPassword
+);
+
+usersRouter.delete(
+  "/:id",
+  authenticate,
+  requirePermission("users:manage"),
+  validateRequest({ params: userIdParamSchema }),
+  controller.softDeleteUser
 );

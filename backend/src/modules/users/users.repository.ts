@@ -1,6 +1,10 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "../../lib/prisma.js";
-import type { UpdateUserInput, UserQueryFilters } from "./users.types.js";
+import type {
+  CreateUserInput,
+  UpdateUserInput,
+  UserQueryFilters,
+} from "./users.types.js";
 
 export const userListItemSelect = {
   id: true,
@@ -8,6 +12,7 @@ export const userListItemSelect = {
   email: true,
   role: true,
   phone: true,
+  vendorId: true,
   isActive: true,
   emailVerified: true,
   lastLoginAt: true,
@@ -30,7 +35,9 @@ export class UserRepository {
         ? { name: filters.sortOrder }
         : filters.sortBy === "email"
           ? { email: filters.sortOrder }
-          : { createdAt: filters.sortOrder };
+          : filters.sortBy === "role"
+            ? { role: filters.sortOrder }
+            : { createdAt: filters.sortOrder };
 
     const [items, totalItems] = await prisma.$transaction([
       prisma.user.findMany({
@@ -54,6 +61,22 @@ export class UserRepository {
     return prisma.user.findUnique({ where: { email }, select: userListItemSelect });
   }
 
+  async createUser(
+    data: CreateUserInput & { passwordHash: string }
+  ): Promise<UserListItemRecord> {
+    return prisma.user.create({
+      data: {
+        name: data.name,
+        email: data.email,
+        passwordHash: data.passwordHash,
+        role: data.role,
+        phone: data.phone || null,
+        vendor: data.vendorId ? { connect: { id: data.vendorId } } : undefined,
+      },
+      select: userListItemSelect,
+    });
+  }
+
   async updateUser(id: string, input: UpdateUserInput): Promise<UserListItemRecord> {
     const data: Prisma.UserUpdateInput = {};
 
@@ -66,8 +89,22 @@ export class UserRepository {
     if (input.role !== undefined) {
       data.role = input.role;
     }
+    if (input.vendorId !== undefined) {
+      data.vendor =
+        input.vendorId === "" || input.vendorId === null
+          ? { disconnect: true }
+          : { connect: { id: input.vendorId } };
+    }
 
     return prisma.user.update({ where: { id }, data, select: userListItemSelect });
+  }
+
+  async updatePasswordHash(id: string, passwordHash: string): Promise<UserListItemRecord> {
+    return prisma.user.update({
+      where: { id },
+      data: { passwordHash },
+      select: userListItemSelect,
+    });
   }
 
   async updateUserStatus(id: string, isActive: boolean): Promise<UserListItemRecord> {

@@ -7,6 +7,7 @@ export interface UserListItemDto {
   email: string;
   role: UserRole;
   phone: string | null;
+  vendorId: string | null;
   isActive: boolean;
   emailVerified: boolean;
   lastLoginAt: Date | null;
@@ -20,14 +21,28 @@ export interface UserQueryFilters {
   isActive?: boolean;
   page: number;
   limit: number;
-  sortBy: "createdAt" | "name" | "email";
+  sortBy: "createdAt" | "name" | "email" | "role";
   sortOrder: "asc" | "desc";
+}
+
+export interface CreateUserInput {
+  name: string;
+  email: string;
+  password: string;
+  role: UserRole;
+  phone?: string;
+  vendorId?: string | null;
 }
 
 export interface UpdateUserInput {
   name?: string;
   phone?: string | null;
   role?: UserRole;
+  vendorId?: string | null;
+}
+
+export interface ResetPasswordInput {
+  newPassword: string;
 }
 
 export interface UpdateUserStatusInput {

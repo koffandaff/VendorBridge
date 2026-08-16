@@ -1,3 +1,4 @@
+import bcrypt from "bcryptjs";
 import { BadRequestError, ConflictError, NotFoundError } from "../../core/errors/AppError.js";
 import { generateOtp, hashOtp, otpExpiryDate } from "../../core/auth/otp.js";
 import { sendInviteEmail } from "../../shared/email.js";
@@ -5,14 +6,48 @@ import { createOtpToken } from "../auth/auth.repository.js";
 import { recordAudit } from "../../shared/helpers/audit.helper.js";
 import { UserRepository, type UserListItemRecord } from "./users.repository.js";
 import type {
+  CreateUserInput,
+  ResetPasswordInput,
   UpdateUserInput,
   UpdateUserStatusInput,
   UserListResult,
   UserQueryFilters,
 } from "./users.types.js";
 
+const SALT_ROUNDS = 10;
+
 export class UserService {
   constructor(private readonly repository: UserRepository = new UserRepository()) {}
+
+  async createUser(
+    input: CreateUserInput,
+    actor: { id: string }
+  ): Promise<UserListItemRecord> {
+    const existing = await this.repository.findUserByEmail(input.email);
+    if (existing) {
+      throw new ConflictError(`User with email '${input.email}' already exists`);
+    }
+
+    let finalVendorId: string | null = input.vendorId ?? null;
+    if (input.role !== "VENDOR") {
+      finalVendorId = null;
+    }
+
+    const passwordHash = await bcrypt.hash(input.password, SALT_ROUNDS);
+    const created = await this.repository.createUser({
+      ...input,
+      vendorId: finalVendorId,
+      passwordHash,
+    });
+    await recordAudit({
+      userId: actor.id,
+      action: "USER.CREATED",
+      entityType: "User",
+      entityId: created.id,
+      newValue: { name: created.name, email: created.email, role: created.role },
+    });
+    return created;
+  }
 
   async listUsers(filters: UserQueryFilters): Promise<UserListResult> {
     const { items, totalItems } = await this.repository.listUsers(filters);
@@ -45,7 +80,16 @@ export class UserService {
       throw new BadRequestError("You cannot change your own role");
     }
 
-    const updated = await this.repository.updateUser(id, input);
+    let finalVendorId: string | null | undefined = input.vendorId;
+    const targetRole = input.role || existing.role;
+    if (targetRole !== "VENDOR") {
+      finalVendorId = null;
+    }
+
+    const updated = await this.repository.updateUser(id, {
+      ...input,
+      vendorId: finalVendorId,
+    });
     await recordAudit({
       userId: actor.id,
       action: "USER.UPDATED",
@@ -97,5 +141,45 @@ export class UserService {
       entityId: id,
     });
     return user;
+  }
+
+  async resetPassword(
+    id: string,
+    input: ResetPasswordInput,
+    actor: { id: string }
+  ): Promise<UserListItemRecord> {
+    const user = await this.getUserById(id);
+    if (!user.isActive) {
+      throw new BadRequestError("Cannot reset the password of a deactivated user");
+    }
+
+    const passwordHash = await bcrypt.hash(input.newPassword, SALT_ROUNDS);
+    const updated = await this.repository.updatePasswordHash(id, passwordHash);
+    await recordAudit({
+      userId: actor.id,
+      action: "USER.PASSWORD_RESET",
+      entityType: "User",
+      entityId: id,
+    });
+    return updated;
+  }
+
+  async softDeleteUser(id: string, actor: { id: string }): Promise<UserListItemRecord> {
+    const existing = await this.getUserById(id);
+
+    if (id === actor.id) {
+      throw new BadRequestError("You cannot deactivate your own account");
+    }
+
+    const updated = await this.repository.updateUserStatus(id, false);
+    await recordAudit({
+      userId: actor.id,
+      action: "USER.DEACTIVATED",
+      entityType: "User",
+      entityId: id,
+      oldValue: { isActive: existing.isActive },
+      newValue: { isActive: updated.isActive },
+    });
+    return updated;
   }
 }

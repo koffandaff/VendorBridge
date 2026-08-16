@@ -1,7 +1,9 @@
 import type { NextFunction, Request, Response } from "express";
-import { sendPaginated, sendSuccess } from "../../core/http/response.js";
+import { sendCreated, sendPaginated, sendSuccess } from "../../core/http/response.js";
 import { UserService } from "./users.service.js";
 import type {
+  CreateUserInput,
+  ResetPasswordInput,
   UpdateUserInput,
   UpdateUserStatusInput,
   UserQueryFilters,
@@ -38,6 +40,17 @@ function toFilters(query: Record<string, unknown>): UserQueryFilters {
 
 export class UserController {
   constructor(private readonly service: UserService = new UserService()) {}
+
+  createUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const user = await this.service.createUser(req.body as CreateUserInput, {
+        id: req.user!.id,
+      });
+      sendCreated(res, user, "User created successfully");
+    } catch (error) {
+      next(error);
+    }
+  };
 
   listUsers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -88,6 +101,30 @@ export class UserController {
         id: req.user!.id,
       });
       sendSuccess(res, user, "Invitation email sent successfully");
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  resetPassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const user = await this.service.resetPassword(
+        getParam(req, "id"),
+        req.body as ResetPasswordInput,
+        { id: req.user!.id }
+      );
+      sendSuccess(res, user, "User password reset successfully");
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  softDeleteUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const user = await this.service.softDeleteUser(getParam(req, "id"), {
+        id: req.user!.id,
+      });
+      sendSuccess(res, user, "User set to inactive (soft deleted)");
     } catch (error) {
       next(error);
     }
