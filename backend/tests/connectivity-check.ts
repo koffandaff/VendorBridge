@@ -89,6 +89,7 @@ async function runConnectivityChecks() {
     headers?: Record<string, string>;
     description: string;
   }[] = [
+    // Health & System
     {
       method: "GET",
       path: "/health",
@@ -105,13 +106,13 @@ async function runConnectivityChecks() {
     {
       method: "GET",
       path: "/api/v1/vendors/categories",
-      expectedStatus: [200, 500], // 200 if DB up, 500 if DB down
+      expectedStatus: [200, 500],
       description: "List Vendor Categories",
     },
     {
       method: "POST",
       path: "/api/v1/vendors/categories",
-      expectedStatus: [400], // 400 validation error (empty body)
+      expectedStatus: [400],
       body: {},
       description: "Create Category (Validation Error test)",
     },
@@ -125,7 +126,7 @@ async function runConnectivityChecks() {
     {
       method: "POST",
       path: "/api/v1/vendors",
-      expectedStatus: [400], // 400 validation error (empty body)
+      expectedStatus: [400],
       body: {},
       description: "Create Vendor (Validation Error test)",
     },
@@ -139,22 +140,57 @@ async function runConnectivityChecks() {
     {
       method: "POST",
       path: "/api/v1/users",
-      expectedStatus: [400], // 400 validation error (empty body)
+      expectedStatus: [400],
       body: {},
       description: "Create User / Manager (Validation Error test)",
+    },
+    // Procurement: RFQs
+    {
+      method: "GET",
+      path: "/api/v1/rfqs",
+      expectedStatus: [200, 401, 500],
+      description: "List RFQs Endpoint",
+    },
+    {
+      method: "POST",
+      path: "/api/v1/rfqs",
+      expectedStatus: [400, 401],
+      body: {},
+      description: "Create RFQ Endpoint",
+    },
+    // Procurement: Quotations
+    {
+      method: "GET",
+      path: "/api/v1/quotations",
+      expectedStatus: [200, 401, 500],
+      description: "List Quotations Endpoint",
+    },
+    // Procurement: Purchase Orders
+    {
+      method: "GET",
+      path: "/api/v1/purchase-orders",
+      expectedStatus: [200, 401, 500],
+      description: "List Purchase Orders Endpoint",
+    },
+    // Procurement: Invoices
+    {
+      method: "GET",
+      path: "/api/v1/invoices",
+      expectedStatus: [200, 401, 500],
+      description: "List Invoices Endpoint",
     },
     // Auth Module
     {
       method: "POST",
       path: "/api/v1/auth/login",
-      expectedStatus: [400], // 400 validation error (empty body)
+      expectedStatus: [400],
       body: {},
       description: "Auth Login (Validation Error test)",
     },
     {
       method: "GET",
       path: "/api/v1/auth/me",
-      expectedStatus: [401], // 401 Unauthorized (no auth token)
+      expectedStatus: [401],
       description: "Auth Me (Authentication Guard test)",
     },
   ];

@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { type ZodSchema, ZodError } from "zod";
 import { ValidationError } from "../errors/AppError.js";
+import { sanitizeInput } from "../../shared/validators/sanitize.js";
 
 export interface RequestValidationSchemas {
   body?: ZodSchema;
@@ -11,6 +12,24 @@ export interface RequestValidationSchemas {
 export function validateRequest(schemas: RequestValidationSchemas) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     try {
+      if (req.body) {
+        req.body = sanitizeInput(req.body);
+      }
+      if (req.query) {
+        const sanitizedQuery = sanitizeInput(req.query);
+        for (const key of Object.keys(req.query)) {
+          delete (req.query as Record<string, unknown>)[key];
+        }
+        Object.assign(req.query, sanitizedQuery);
+      }
+      if (req.params) {
+        const sanitizedParams = sanitizeInput(req.params);
+        for (const key of Object.keys(req.params)) {
+          delete (req.params as Record<string, unknown>)[key];
+        }
+        Object.assign(req.params, sanitizedParams);
+      }
+
       if (schemas.body) {
         req.body = schemas.body.parse(req.body);
       }
