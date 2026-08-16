@@ -4,6 +4,7 @@ import {
   ConflictError,
   NotFoundError,
 } from "../../core/errors/app-error.js";
+import { recordAudit } from "../../shared/helpers/audit.helper.js";
 import {
   buildYearPrefix,
   generateSequentialNumber,
@@ -38,7 +39,7 @@ export class RfqService {
       (prefix) => this.repository.findLatestRfqNumber(prefix)
     );
 
-    return this.repository.createWithItems(
+    const rfq = await this.repository.createWithItems(
       {
         title: input.title,
         description: input.description,
@@ -49,6 +50,16 @@ export class RfqService {
       input.items,
       invitedVendorIds
     );
+
+    await recordAudit({
+      userId: createdById,
+      action: "RFQ_CREATED",
+      entityType: "RFQ",
+      entityId: rfq.id,
+      newValue: { rfqNumber: rfq.rfqNumber, title: rfq.title },
+    });
+
+    return rfq;
   }
 
   async getRfqById(id: string) {
@@ -59,8 +70,14 @@ export class RfqService {
     return rfq;
   }
 
-  async listRfqs(filters: RfqQueryFilters) {
-    const { items, totalItems } = await this.repository.list(filters);
+  async listRfqs(filters: RfqQueryFilters, user: { id: string; role: string }) {
+    let vendorId: string | undefined;
+
+    if (user.role === "VENDOR") {
+      vendorId = (await this.repository.findUserVendorId(user.id)) ?? undefined;
+    }
+
+    const { items, totalItems } = await this.repository.list(filters, vendorId);
     const page = filters.page || 1;
     const limit = filters.limit || 10;
     const totalPages = Math.ceil(totalItems / limit) || 1;

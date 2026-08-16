@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { InvoiceService } from "./invoice.service.js";
-import { sendSuccess, sendCreated, sendPaginated } from "../../core/http/response.js";
+import { sendSuccess, sendCreated, sendPaginated, ok } from "../../core/http/response.js";
 import type {
   CreateInvoiceInput,
   UpdateInvoiceStatusInput,
@@ -20,7 +20,10 @@ export class InvoiceController {
 
   createInvoice = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const invoice = await this.service.createInvoice(req.body as CreateInvoiceInput);
+      const invoice = await this.service.createInvoice(
+        req.body as CreateInvoiceInput,
+        req.user!.id
+      );
       sendCreated(res, invoice, "Invoice generated successfully");
     } catch (error) {
       next(error);
@@ -53,6 +56,26 @@ export class InvoiceController {
         req.body as UpdateInvoiceStatusInput
       );
       sendSuccess(res, invoice, "Invoice status updated successfully");
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  downloadInvoicePdf = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { buffer, invoiceNumber } = await this.service.generateInvoicePdf(getParam(req, "id"));
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="${invoiceNumber}.pdf"`);
+      res.send(buffer);
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  emailInvoice = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const invoice = await this.service.emailInvoice(getParam(req, "id"), req.user!.id);
+      ok(res, invoice, 200);
     } catch (error) {
       next(error);
     }

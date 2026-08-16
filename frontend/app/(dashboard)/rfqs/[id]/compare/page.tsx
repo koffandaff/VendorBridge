@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
-import { fetchRFQById, fetchQuotations, RFQ, Quotation } from "@/lib/data";
+import { ArrowLeft, CheckCircle2, FileText, Eye } from "lucide-react";
+import { fetchRFQById, fetchQuotations, selectQuotation, createPurchaseOrder, RFQ, Quotation } from "@/lib/data";
+import { addDays, formatCurrency, toIsoDate } from "@/lib/format";
 import styles from "./compare.module.css";
-import { showLoading, showModalSuccess, closeAlert } from "@/lib/alerts";
+import { showLoading, showModalSuccess, showToastError, closeAlert } from "@/lib/alerts";
 
 export default function CompareQuotesPage() {
   const router = useRouter();
@@ -14,25 +15,32 @@ export default function CompareQuotesPage() {
 
   const [rfq, setRfq] = useState<RFQ | null>(null);
   const [quotes, setQuotes] = useState<Quotation[]>([]);
+  const [selectedQuoteId, setSelectedQuoteId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const loadData = async () => {
+    const [rfqData, rfqQuotes] = await Promise.all([
+      fetchRFQById(rfqId),
+      fetchQuotations(rfqId),
+    ]);
+    setRfq(rfqData || null);
+    setQuotes(rfqQuotes);
+    const selected = rfqQuotes.find((q) => q.rawStatus === "SELECTED");
+    setSelectedQuoteId(selected?.id ?? null);
+  };
 
   useEffect(() => {
-    const loadData = async () => {
+    const load = async () => {
       try {
-        const [rfqData, allQuotes] = await Promise.all([
-          fetchRFQById(rfqId),
-          fetchQuotations()
-        ]);
-        
-        setRfq(rfqData || null);
-        setQuotes(allQuotes.filter(q => q.rfqId === rfqId));
+        await loadData();
       } catch (error) {
         console.error("Failed to load compare data", error);
       } finally {
         setLoading(false);
       }
     };
-    if (rfqId) loadData();
+    if (rfqId) load();
   }, [rfqId]);
 
   if (loading) {
@@ -52,16 +60,61 @@ export default function CompareQuotesPage() {
     );
   }
 
-  const lowestPriceQuote = [...quotes].sort((a, b) => a.grandTotal - b.grandTotal)[0];
+  const eligibleQuotes = quotes.filter((q) => q.rawStatus !== "REJECTED" && q.rawStatus !== "EXPIRED");
+  const lowestPriceQuote = [...eligibleQuotes].sort((a, b) => a.grandTotal - b.grandTotal)[0];
+  const selectedQuote = quotes.find((q) => q.id === selectedQuoteId);
+
+  const getQualityLabel = (rating: number | null | undefined) => {
+    if (rating === null || rating === undefined) return "Not Rated";
+    if (rating >= 4) return "Excellent";
+    if (rating >= 3) return "Good";
+    return "Average";
+  };
+
+  const handleSelect = async (quote: Quotation) => {
+    setActionLoading(true);
+    showLoading("Selecting quotation...");
+    try {
+      await selectQuotation(quote.id);
+      closeAlert();
+      await showModalSuccess("Success", `Selected ${quote.vendorName} for ${rfq.title}`);
+      await loadData();
+    } catch (error) {
+      closeAlert();
+      showToastError(error instanceof Error ? error.message : "Failed to select quotation");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleGeneratePO = async () => {
+    if (!selectedQuote) return;
+    setActionLoading(true);
+    showLoading("Generating Purchase Order...");
+    try {
+      await createPurchaseOrder({
+        quotationId: selectedQuote.id,
+        expectedDeliveryDate: toIsoDate(addDays(new Date(), selectedQuote.deliveryDays || 14).toISOString()),
+      });
+      closeAlert();
+      await showModalSuccess("Success", "Purchase Order generated!");
+      router.push("/purchase-orders");
+    } catch (error) {
+      closeAlert();
+      showToastError(error instanceof Error ? error.message : "Failed to generate purchase order");
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   return (
     <div className={styles.container}>
       <div className={styles.headerRow}>
         <div className={styles.headerLeft}>
           <h1 className={styles.title}>Quotation Comparison</h1>
-          <p className={styles.subtitle}>RFQ: {rfq.title} ({rfq.id}) - {quotes.length} quotations received</p>
+          <p className={styles.subtitle}>RFQ: {rfq.title} ({rfq.number}) - {quotes.length} quotations received</p>
         </div>
-        <button className={styles.backButton} onClick={() => router.push('/quotations')}>
+        <button className={styles.backButton} onClick={() => router.push('/rfqs')}>
           <ArrowLeft size={16} />
           <span>Back</span>
         </button>
@@ -86,51 +139,62 @@ export default function CompareQuotesPage() {
 
             {/* Vendor Columns */}
             {quotes.map((quote) => {
-              const isRecommended = lowestPriceQuote?.id === quote.id;
-              
+              const isRecommended = lowestPriceQuote?.id === quote.id && !selectedQuote;
+              const isSelected = selectedQuoteId === quote.id;
+
               return (
-                <div key={quote.id} className={`${styles.column} ${isRecommended ? styles.recommendedColumn : ""}`}>
+                <div key={quote.id} className={`${styles.column} ${isSelected ? styles.recommendedColumn : ""}`}>
                   {isRecommended && <div className={styles.recommendedBadge}>Recommended</div>}
-                  
+                  {isSelected && <div className={styles.recommendedBadge} style={{ background: "rgba(16,185,129,0.15)", color: "#10b981" }}><CheckCircle2 size={12} /> Selected</div>}
+
                   <div className={`${styles.cell} ${styles.headerCell}`}>
                     <span className={styles.vendorName}>{quote.vendorName}</span>
-                    <span className={styles.vendorId}>{quote.id}</span>
+                    <span className={styles.vendorId}>{quote.quotationNumber}</span>
                   </div>
-                  
-                  <div className={`${styles.cell} ${styles.valueCell} ${styles.priceCell}`} style={{ color: isRecommended ? "#10b981" : "#f8fafc" }}>
-                    ${quote.grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+
+                  <div className={`${styles.cell} ${styles.valueCell} ${styles.priceCell}`} style={{ color: isRecommended || isSelected ? "#10b981" : "#f8fafc" }}>
+                    {formatCurrency(quote.grandTotal)}
                   </div>
-                  
+
                   <div className={`${styles.cell} ${styles.valueCell}`}>
-                    {Math.floor(Math.random() * 10 + 5)} Days
+                    {quote.deliveryDays > 0 ? `${quote.deliveryDays} Days` : "—"}
                   </div>
-                  
+
                   <div className={`${styles.cell} ${styles.valueCell}`}>
-                    {['Excellent', 'Good', 'Average'][Math.floor(Math.random() * 3)]}
+                    {getQualityLabel(quote.vendorRating)}
                   </div>
-                  
+
                   <div className={`${styles.cell} ${styles.valueCell}`}>
-                    {['Immediate', 'Standard', 'Flexible'][Math.floor(Math.random() * 3)]}
+                    Valid till {quote.validUntil}
                   </div>
-                  
+
                   <div className={`${styles.cell} ${styles.actionCell}`}>
-                    {isRecommended ? (
-                      <button 
+                    {quote.rawStatus === "REJECTED" || quote.rawStatus === "EXPIRED" ? (
+                      <span style={{ color: "#ef4444", fontSize: "12px", fontWeight: 600 }}>Rejected</span>
+                    ) : isSelected ? (
+                      <button
                         className={styles.sendButton}
-                        onClick={async () => {
-                          showLoading("Sending for approval...");
-                          await new Promise(resolve => setTimeout(resolve, 800));
-                          closeAlert();
-                          await showModalSuccess("Success", "Sent to Manager for Approval!");
-                          router.push('/approvals');
-                        }}
+                        onClick={handleGeneratePO}
+                        disabled={actionLoading}
                       >
-                        Send for Approval
+                        <FileText size={14} />
+                        {actionLoading ? "Generating..." : "Generate PO"}
                       </button>
                     ) : (
-                      <button className={styles.viewButton} onClick={() => router.push(`/quotations/review/${quote.id}`)}>
-                        View
-                      </button>
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        <button className={styles.viewButton} onClick={() => router.push(`/quotations/review/${quote.id}`)}>
+                          <Eye size={14} /> View
+                        </button>
+                        {!selectedQuote && (
+                          <button
+                            className={styles.sendButton}
+                            onClick={() => handleSelect(quote)}
+                            disabled={actionLoading}
+                          >
+                            Select
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>

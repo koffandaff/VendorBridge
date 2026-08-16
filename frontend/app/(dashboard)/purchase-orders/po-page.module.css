@@ -181,3 +181,26 @@
 .viewButton:hover {
   background: #2a2f3a;
 }
+
+.viewButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.actionsCell {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.poLink {
+  font-weight: 600;
+  color: #f8fafc;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.poLink:hover {
+  color: #10b981;
+}

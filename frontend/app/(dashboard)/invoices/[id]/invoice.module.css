@@ -64,6 +64,11 @@
   border-color: rgba(255, 255, 255, 0.3);
 }
 
+.actionBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Info Box */
 .infoBox {
   background: rgba(255, 255, 255, 0.02);
@@ -217,4 +222,82 @@
 
 .markPaid:hover {
   opacity: 0.8;
+}
+
+@media print {
+  :global(aside),
+  :global(nav),
+  :global(header),
+  :global(button) {
+    display: none !important;
+  }
+
+  :global(body) {
+    background: #fff !important;
+    color: #0f172a !important;
+  }
+
+  .container {
+    animation: none;
+  }
+
+  .title {
+    background: none;
+    -webkit-text-fill-color: #0f172a;
+    color: #0f172a !important;
+  }
+
+  .subtitle {
+    color: #475569 !important;
+  }
+
+  .infoBox,
+  .tableCard {
+    background: #fff !important;
+    border-color: #e2e8f0 !important;
+  }
+
+  .infoRow {
+    border-color: #e2e8f0 !important;
+  }
+
+  .infoLabel {
+    color: #475569 !important;
+  }
+
+  .infoText {
+    color: #0f172a !important;
+  }
+
+  .infoRow span,
+  .infoRow div {
+    color: #0f172a !important;
+  }
+
+  .table th {
+    color: #475569 !important;
+    border-color: #e2e8f0 !important;
+  }
+
+  .table td {
+    color: #0f172a !important;
+    border-color: #e2e8f0 !important;
+  }
+
+  .summaryLine {
+    color: #334155 !important;
+    border-color: #e2e8f0 !important;
+  }
+
+  .grandTotalLine {
+    color: #0f172a !important;
+  }
+
+  .summaryContent {
+    border-color: #e2e8f0 !important;
+  }
+
+  .footer {
+    color: #0f172a !important;
+  }
 }

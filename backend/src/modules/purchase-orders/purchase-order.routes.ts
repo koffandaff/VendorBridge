@@ -44,3 +44,11 @@ purchaseOrderRouter.patch(
   validateRequest({ params: uuidParamSchema, body: updatePurchaseOrderStatusSchema }),
   controller.updatePurchaseOrderStatus
 );
+
+purchaseOrderRouter.post(
+  "/:id/acknowledge",
+  authenticate,
+  requirePermission("purchaseOrders:acknowledge"),
+  validateRequest({ params: uuidParamSchema }),
+  controller.acknowledgePurchaseOrder
+);

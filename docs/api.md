@@ -57,15 +57,22 @@ Full documentation (flows, token/OTP design, security notes, env vars, demo acco
 
 ### Users & Managers (`/api/v1/users`)
 
-| Method   | Path                       | Description                                                     |
-| -------- | -------------------------- | --------------------------------------------------------------- |
-| `POST`   | `/api/v1/users`            | Create manager/user account (ADMIN, PROCUREMENT_OFFICER, APPROVER, VENDOR) |
-| `GET`    | `/api/v1/users`            | List users/managers (filter by role, isActive, search, pagination) |
-| `GET`    | `/api/v1/users/:id`        | Get user details by ID (sanitized, excludes passwordHash)        |
-| `PUT`    | `/api/v1/users/:id`        | Update user/manager profile                                     |
-| `PATCH`  | `/api/v1/users/:id/status`  | Activate or deactivate user (`isActive = true/false`)           |
-| `PATCH`  | `/api/v1/users/:id/password`| Reset user password (bcrypt hashed)                             |
-| `DELETE` | `/api/v1/users/:id`        | Safe soft-delete user (sets `isActive = false`)                 |
+All user endpoints require ADMIN (`users:manage`). Passwords are never exposed in responses.
+`vendorId` is only assignable to VENDOR users (enforced null for internal roles under
+docs/Schema.md §4.1). With the exception of `POST`, mutating endpoints record an audit log entry
+(`USER.CREATED`, `USER.UPDATED`, `USER.ACTIVATED`, `USER.DEACTIVATED`, `USER.PASSWORD_RESET`,
+`USER.INVITE_RESENT`).
+
+| Method   | Path                       | Auth                | Description                                                     |
+| -------- | -------------------------- | ------------------- | --------------------------------------------------------------- |
+| `POST`   | `/api/v1/users`            | ADMIN (`users:manage`) | Create manager/user account (ADMIN, PROCUREMENT_OFFICER, APPROVER, VENDOR) |
+| `GET`    | `/api/v1/users`            | ADMIN (`users:manage`) | List users/managers (filter by role, isActive, search, sort, pagination) |
+| `GET`    | `/api/v1/users/:id`        | ADMIN (`users:manage`) | Get user details by ID (sanitized, excludes passwordHash)        |
+| `PUT`    | `/api/v1/users/:id`        | ADMIN (`users:manage`) | Update user/manager profile (cannot change own role)             |
+| `PATCH`  | `/api/v1/users/:id/status` | ADMIN (`users:manage`) | Activate or deactivate user (`isActive = true/false`, cannot deactivate self) |
+| `PATCH`  | `/api/v1/users/:id/password` | ADMIN (`users:manage`) | Reset user password (bcrypt hashed)                             |
+| `DELETE` | `/api/v1/users/:id`        | ADMIN (`users:manage`) | Safe soft-delete user (sets `isActive = false`)                  |
+| `POST`   | `/api/v1/users/:id/resend-invite` | ADMIN (`users:manage`) | Re-issue the OTP invite email for a user              |
 
 ### Vendor Categories (`/api/v1/vendors/categories`)
 
@@ -145,11 +152,56 @@ Permissions: generate/transition `invoices:generate`, view `invoices:generate` o
 | `GET`    | `/api/v1/invoices/:id`   | Get invoice details with items, vendor, purchase order         |
 | `PATCH`  | `/api/v1/invoices/:id/status` | Transition invoice status (ISSUED→SENT→PAID, →CANCELLED)  |
 
+## Notifications — `/api/v1/notifications`
+
+Users only ever see their own notifications (`notifications:view` is granted to every role).
+
+| Method | Path                          | Description                                  |
+| ------ | ----------------------------- | -------------------------------------------- |
+| `GET`  | `/notifications`              | List my notifications (pagination, `?unread=true`) |
+| `GET`  | `/notifications/unread-count` | Count of unread notifications                |
+| `PATCH`| `/notifications/:id/read`     | Mark one notification as read                |
+| `PATCH`| `/notifications/read-all`     | Mark all of my notifications as read         |
+
+Internal helper `notify()` (`backend/src/shared/helpers/notification.helper.ts`) is exposed to
+future modules (RFQ, approvals, PO, invoice) for emitting `Notification` rows.
+
+## Audit logs — `/api/v1/audit-logs`
+
+Append-only. Records who did what, to which entity, what changed (old/new values), and from which IP.
+
+| Method | Path           | Description |
+| ------ | -------------- | ----------- |
+| `GET`  | `/audit-logs`  | List audit entries — filters: `userId`, `entityType`, `action`, `from`/`to` (ISO datetime), `page`, `limit` |
+
+Requires ADMIN (`auditLogs:view`). Currently audited: login, register, logout, and every user
+mutation. `recordAudit()` helper: `backend/src/shared/helpers/audit.helper.ts`.
+
+## Dashboard — `/api/v1/dashboard`
+
+Requires ADMIN (`analytics:view`).
+
+| Method | Path                           | Description |
+| ------ | ------------------------------ | ----------- |
+| `GET`  | `/dashboard/summary`           | KPI cards: users, vendors by status, RFQs, quotations, pending approvals, PO spend, invoice outstanding |
+| `GET`  | `/dashboard/trends?months=6`   | Monthly RFQ/PO/invoice counts for last N months (1–24, default 6) |
+| `GET`  | `/dashboard/vendor-performance`| Vendors ranked by PO spend with order count |
+
+Money values (spend, outstanding) are Decimal and returned as strings — never as floats.
+
+## Seed data
+
+`npm run prisma:seed` (backend) creates demo users, categories, 3 vendors with contacts, 2 RFQs
+with items and invited vendors, 2 quotations (one under review + pending approval, one selected +
+approved), a purchase order, an invoice, notifications, and audit entries — enough to populate the
+dashboard immediately. The seed is idempotent and safe to re-run.
+
 ## Architecture & Conventions
 
 - Each feature owns its routes: `backend/src/modules/<feature>/<feature>.routes.ts`.
 - Route handlers are thin: parsing -> validation -> controller/service -> response.
 - Auth/RBAC: `backend/src/core/auth/guards.ts` and `backend/src/core/rbac/guards.ts`.
+  Permissions are defined in `backend/src/core/rbac/roles.ts` (`ROLE_PERMISSIONS`).
 - Centralized errors handled through `backend/src/core/errors/AppError.ts` and the centralized error middleware (`backend/src/core/errors/error.middleware.ts` / `backend/src/core/middleware/error.middleware.ts`).
 - Standard API response structure defined in `backend/src/core/http/response.ts`.
 - Endpoint documentation is kept in sync with this file as features land.

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { fetchVendors, Vendor } from "@/lib/data";
+import { createVendor, fetchVendors, fetchVendorCategories, Vendor } from "@/lib/data";
 import styles from "./vendors-page.module.css";
 import { Search, Plus, X } from "lucide-react";
 
@@ -9,21 +9,17 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
-import { showLoading, showModalSuccess, closeAlert } from "@/lib/alerts";
+import { showLoading, showModalSuccess, showToastError, closeAlert } from "@/lib/alerts";
 
 type FilterTab = "All" | "Active" | "Pending" | "Blocked";
 
 const vendorSchema = z.object({
   name: z.string().min(2, "Vendor name is required"),
-  category: z.enum(["Furniture", "IT Hardware", "Construction", "Logistics", "Stationery", "Other"], {
-    message: "Please select a valid category"
-  }),
+  categoryId: z.string().min(1, "Please select a valid category"),
   gstNumber: z.string().regex(/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/, "Invalid GST format (e.g. 22AAAAA0000A1Z5)"),
-  contactPerson: z.string().min(2, "Contact person is required"),
   contactNo: z.string().min(10, "Valid contact number required"),
   email: z.string().email("Invalid email address"),
   address: z.string().min(5, "Address is required"),
-  status: z.enum(["Active", "Pending", "Blocked"]),
 });
 
 type VendorFormValues = z.infer<typeof vendorSchema>;
@@ -31,6 +27,7 @@ type VendorFormValues = z.infer<typeof vendorSchema>;
 export default function VendorsPage() {
   const router = useRouter();
   const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<FilterTab>("All");
@@ -42,17 +39,20 @@ export default function VendorsPage() {
     reset,
     formState: { errors, isSubmitting }
   } = useForm<VendorFormValues>({
-    resolver: zodResolver(vendorSchema),
-    defaultValues: {
-      status: "Pending"
-    }
+    resolver: zodResolver(vendorSchema)
   });
+
+  const loadVendors = async () => {
+    const data = await fetchVendors();
+    setVendors(data);
+  };
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const data = await fetchVendors();
-        setVendors(data);
+        const [vendorData, categoryData] = await Promise.all([fetchVendors(), fetchVendorCategories()]);
+        setVendors(vendorData);
+        setCategories(categoryData);
       } catch (error) {
         console.error("Failed to load vendors", error);
       } finally {
@@ -63,14 +63,25 @@ export default function VendorsPage() {
   }, []);
 
   const onSubmit = async (data: VendorFormValues) => {
-    console.log("Submitting Vendor Data:", data);
-    showLoading("Adding vendor...");
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 800));
-    closeAlert();
-    await showModalSuccess("Success", "Vendor added successfully!");
-    reset();
-    setIsModalOpen(false);
+    try {
+      showLoading("Adding vendor...");
+      await createVendor({
+        name: data.name,
+        categoryId: data.categoryId,
+        email: data.email,
+        phone: data.contactNo,
+        gstNumber: data.gstNumber,
+        address: data.address,
+      });
+      closeAlert();
+      await showModalSuccess("Success", "Vendor added successfully!");
+      reset();
+      setIsModalOpen(false);
+      loadVendors().catch(() => undefined);
+    } catch (error) {
+      closeAlert();
+      showToastError(error instanceof Error ? error.message : "Failed to add vendor");
+    }
   };
 
   const closeModal = () => {
@@ -240,18 +251,15 @@ export default function VendorsPage() {
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Category</label>
                   <select 
-                    className={`${styles.formSelect} ${errors.category ? styles.error : ""}`}
-                    {...register("category")}
+                    className={`${styles.formSelect} ${errors.categoryId ? styles.error : ""}`}
+                    {...register("categoryId")}
                   >
                     <option value="">Select category...</option>
-                    <option value="Furniture">Furniture</option>
-                    <option value="IT Hardware">IT Hardware</option>
-                    <option value="Construction">Construction</option>
-                    <option value="Logistics">Logistics</option>
-                    <option value="Stationery">Stationery</option>
-                    <option value="Other">Other</option>
+                    {categories.map(category => (
+                      <option key={category.id} value={category.id}>{category.name}</option>
+                    ))}
                   </select>
-                  {errors.category && <span className={styles.formError}>{errors.category.message}</span>}
+                  {errors.categoryId && <span className={styles.formError}>{errors.categoryId.message}</span>}
                 </div>
 
                 {/* GST Number */}
@@ -264,18 +272,6 @@ export default function VendorsPage() {
                     {...register("gstNumber")}
                   />
                   {errors.gstNumber && <span className={styles.formError}>{errors.gstNumber.message}</span>}
-                </div>
-
-                {/* Contact Person Name */}
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Contact Person</label>
-                  <input 
-                    type="text" 
-                    className={`${styles.formInput} ${errors.contactPerson ? styles.error : ""}`}
-                    placeholder="Full name"
-                    {...register("contactPerson")}
-                  />
-                  {errors.contactPerson && <span className={styles.formError}>{errors.contactPerson.message}</span>}
                 </div>
 
                 {/* Contact Number */}
@@ -300,20 +296,6 @@ export default function VendorsPage() {
                     {...register("email")}
                   />
                   {errors.email && <span className={styles.formError}>{errors.email.message}</span>}
-                </div>
-
-                {/* Status */}
-                <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Status</label>
-                  <select 
-                    className={`${styles.formSelect} ${errors.status ? styles.error : ""}`}
-                    {...register("status")}
-                  >
-                    <option value="Active">Active</option>
-                    <option value="Pending">Pending</option>
-                    <option value="Blocked">Blocked</option>
-                  </select>
-                  {errors.status && <span className={styles.formError}>{errors.status.message}</span>}
                 </div>
 
                 {/* Address (Full Width) */}

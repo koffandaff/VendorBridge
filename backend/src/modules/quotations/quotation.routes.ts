@@ -6,11 +6,21 @@ import { validateRequest } from "../../core/middleware/validate.middleware.js";
 import {
   quotationQuerySchema,
   quotationCompareQuerySchema,
+  createQuotationSchema,
+  updateQuotationSchema,
   uuidParamSchema,
 } from "./quotation.schema.js";
 
 export const quotationRouter: Router = Router();
 const controller = new QuotationController();
+
+quotationRouter.post(
+  "/",
+  authenticate,
+  requirePermission("quotations:submit"),
+  validateRequest({ body: createQuotationSchema }),
+  controller.createQuotation
+);
 
 quotationRouter.get(
   "/compare",
@@ -26,6 +36,14 @@ quotationRouter.get(
   requirePermission("quotations:view"),
   validateRequest({ query: quotationQuerySchema }),
   controller.listQuotations
+);
+
+quotationRouter.patch(
+  "/:id",
+  authenticate,
+  requirePermission("quotations:editDraft"),
+  validateRequest({ params: uuidParamSchema, body: updateQuotationSchema }),
+  controller.updateQuotation
 );
 
 quotationRouter.get(

@@ -2,8 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, FileCheck, XCircle } from "lucide-react";
-import { fetchQuotations, Quotation } from "@/lib/data";
+import { ArrowLeft, FileCheck, XCircle, FileText } from "lucide-react";
+import { fetchQuotationById, rejectQuotation, selectQuotation, Quotation } from "@/lib/data";
+import { formatCurrency } from "@/lib/format";
+import toast from "react-hot-toast";
 
 export default function QuotationReviewPage() {
   const router = useRouter();
@@ -12,13 +14,17 @@ export default function QuotationReviewPage() {
 
   const [quote, setQuote] = useState<Quotation | null>(null);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const loadQuote = async () => {
+    const data = await fetchQuotationById(quoteId);
+    setQuote(data || null);
+  };
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const data = await fetchQuotations();
-        const found = data.find(q => q.id === quoteId);
-        setQuote(found || null);
+        await loadQuote();
       } catch (error) {
         console.error("Failed to load Quotation", error);
       } finally {
@@ -27,6 +33,32 @@ export default function QuotationReviewPage() {
     };
     if (quoteId) loadData();
   }, [quoteId]);
+
+  const handleAccept = async () => {
+    setActionLoading(true);
+    try {
+      await selectQuotation(quoteId);
+      toast.success("Quotation accepted!");
+      await loadQuote();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to accept quotation");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleReject = async () => {
+    setActionLoading(true);
+    try {
+      await rejectQuotation(quoteId);
+      toast.error("Quotation rejected.");
+      await loadQuote();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to reject quotation");
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -47,7 +79,7 @@ export default function QuotationReviewPage() {
     return (
       <div style={{ padding: "40px", color: "#f8fafc" }}>
         <h2>Quotation Not Found</h2>
-        <button 
+        <button
           onClick={() => router.back()}
           style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "white", padding: "8px 16px", borderRadius: "8px", marginTop: "16px", cursor: "pointer" }}
         >
@@ -63,11 +95,11 @@ export default function QuotationReviewPage() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", borderBottom: "1px solid rgba(255, 255, 255, 0.05)", paddingBottom: "24px" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           <h1 style={{ fontSize: "32px", fontWeight: 800, background: "linear-gradient(to right, #fff, #cbd5e1)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-            Review Quotation: {quote.id}
+            Review Quotation: {quote.quotationNumber}
           </h1>
           <p style={{ fontSize: "16px", color: "#94a3b8" }}>Submitted by {quote.vendorName} on {quote.submittedAt}</p>
         </div>
-        <button 
+        <button
           onClick={() => router.back()}
           style={{ background: "transparent", border: "1px solid rgba(255, 255, 255, 0.1)", color: "#f8fafc", padding: "10px 16px", borderRadius: "10px", fontSize: "14px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
         >
@@ -79,53 +111,80 @@ export default function QuotationReviewPage() {
       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "32px" }}>
         <div style={{ background: "rgba(30, 41, 59, 0.4)", backdropFilter: "blur(12px)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "20px", padding: "32px", display: "flex", flexDirection: "column", gap: "24px" }}>
           <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#f8fafc", borderBottom: "1px solid rgba(255, 255, 255, 0.05)", paddingBottom: "16px" }}>Quotation Details</h2>
-          
+
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <span style={{ color: "#94a3b8" }}>Associated RFQ</span>
-              <span style={{ color: "#f8fafc", fontWeight: 600 }}>{quote.rfqTitle} ({quote.rfqId})</span>
+              <span style={{ color: "#f8fafc", fontWeight: 600 }}>{quote.rfqTitle}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: "#94a3b8" }}>Delivery Time</span>
+              <span style={{ color: "#f8fafc", fontWeight: 600 }}>{quote.deliveryDays > 0 ? `${quote.deliveryDays} days` : "—"}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: "#94a3b8" }}>Valid Until</span>
+              <span style={{ color: "#f8fafc", fontWeight: 600 }}>{quote.validUntil}</span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <span style={{ color: "#94a3b8" }}>Current Status</span>
-              <span style={{ 
-                color: quote.status === "Accepted" ? "#34d399" : quote.status === "Rejected" ? "#f87171" : "#fbbf24", 
-                fontWeight: 600 
+              <span style={{
+                color: quote.status === "Accepted" ? "#34d399" : quote.status === "Rejected" ? "#f87171" : "#fbbf24",
+                fontWeight: 600
               }}>{quote.status}</span>
             </div>
+            {quote.notes && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                <span style={{ color: "#94a3b8" }}>Notes</span>
+                <span style={{ color: "#e2e8f0", fontSize: "14px", lineHeight: 1.6 }}>{quote.notes}</span>
+              </div>
+            )}
             <div style={{ borderTop: "1px solid rgba(255, 255, 255, 0.1)", margin: "16px 0" }}></div>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "24px", fontWeight: 700 }}>
               <span style={{ color: "#f8fafc" }}>Grand Total</span>
-              <span style={{ color: "#10b981" }}>${quote.grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+              <span style={{ color: "#10b981" }}>{formatCurrency(quote.grandTotal)}</span>
             </div>
           </div>
         </div>
 
         <div style={{ background: "rgba(30, 41, 59, 0.4)", backdropFilter: "blur(12px)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "20px", padding: "32px", display: "flex", flexDirection: "column", gap: "24px" }}>
           <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#f8fafc", borderBottom: "1px solid rgba(255, 255, 255, 0.05)", paddingBottom: "16px" }}>Actions</h2>
-          
-          <p style={{ color: "#94a3b8", fontSize: "14px" }}>Review this bid and make a decision to either approve or reject the quotation.</p>
 
-          <button 
-            style={{ width: "100%", padding: "12px", background: "linear-gradient(135deg, #10b981 0%, #059669 100%)", color: "white", borderRadius: "10px", fontWeight: 600, border: "none", cursor: "pointer", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", boxShadow: "0 4px 6px -1px rgba(16, 185, 129, 0.2)" }}
-            onClick={() => {
-              alert("Accepted!");
-              router.push('/quotations');
-            }}
-          >
-            <FileCheck size={18} />
-            Accept Quotation
-          </button>
-          
-          <button 
-            style={{ width: "100%", padding: "12px", background: "transparent", color: "#f87171", border: "1px solid rgba(239, 68, 68, 0.3)", borderRadius: "10px", fontWeight: 600, cursor: "pointer", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px" }}
-            onClick={() => {
-              alert("Rejected.");
-              router.push('/quotations');
-            }}
-          >
-            <XCircle size={18} />
-            Reject Quotation
-          </button>
+          {quote.rawStatus === "SELECTED" ? (
+            <>
+              <p style={{ color: "#94a3b8", fontSize: "14px" }}>This quotation has been accepted. You can now generate a purchase order.</p>
+              <button
+                style={{ width: "100%", padding: "12px", background: "linear-gradient(135deg, #10b981 0%, #059669 100%)", color: "white", borderRadius: "10px", fontWeight: 600, border: "none", cursor: "pointer", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", boxShadow: "0 4px 6px -1px rgba(16, 185, 129, 0.2)" }}
+                onClick={() => router.push(`/rfqs/${quote.rfqId}/compare`)}
+              >
+                <FileText size={18} />
+                Generate Purchase Order
+              </button>
+            </>
+          ) : quote.rawStatus === "REJECTED" || quote.rawStatus === "EXPIRED" ? (
+            <p style={{ color: "#f87171", fontSize: "14px" }}>This quotation has been {quote.rawStatus === "EXPIRED" ? "expired" : "rejected"}.</p>
+          ) : (
+            <>
+              <p style={{ color: "#94a3b8", fontSize: "14px" }}>Review this bid and make a decision to either approve or reject the quotation.</p>
+
+              <button
+                style={{ width: "100%", padding: "12px", background: "linear-gradient(135deg, #10b981 0%, #059669 100%)", color: "white", borderRadius: "10px", fontWeight: 600, border: "none", cursor: "pointer", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", boxShadow: "0 4px 6px -1px rgba(16, 185, 129, 0.2)" }}
+                onClick={handleAccept}
+                disabled={actionLoading}
+              >
+                <FileCheck size={18} />
+                {actionLoading ? "Processing..." : "Accept Quotation"}
+              </button>
+
+              <button
+                style={{ width: "100%", padding: "12px", background: "transparent", color: "#f87171", border: "1px solid rgba(239, 68, 68, 0.3)", borderRadius: "10px", fontWeight: 600, cursor: "pointer", display: "flex", justifyContent: "center", alignItems: "center", gap: "8px" }}
+                onClick={handleReject}
+                disabled={actionLoading}
+              >
+                <XCircle size={18} />
+                Reject Quotation
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

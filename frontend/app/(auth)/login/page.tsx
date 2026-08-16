@@ -1,27 +1,36 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import styles from "./login.module.css";
-import { useAuth, UserRole } from "@/lib/AuthContext";
-import { showLoading, showModalSuccess, showModalError, closeAlert } from "@/lib/alerts";
+import { useAuth } from "@/lib/AuthContext";
+import { showLoading, showModalSuccess, closeAlert } from "@/lib/alerts";
+import { ApiError } from "@/lib/api";
+
+const DEMO_ACCOUNTS = [
+  { label: "Admin", email: "admin@gmail.com", password: "Admin@123" },
+  { label: "Procurement Officer", email: "procurement.officer@gmail.com", password: "Procure@123" },
+  { label: "Approver", email: "approver@gmail.com", password: "Approve@123" },
+  { label: "Vendor", email: "vendor.user@gmail.com", password: "Vendor@123" },
+];
 
 export default function LoginPage() {
   const { login } = useAuth();
-  
-  const [username, setUsername] = useState("");
+
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [errors, setErrors] = useState<{ username?: string; password?: string }>({});
+  const [errors, setErrors] = useState<{ email?: string; password?: string; form?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
 
   const validate = () => {
-    const newErrors: { username?: string; password?: string } = {};
-    if (!username.trim()) {
-      newErrors.username = "Username is required";
+    const newErrors: { email?: string; password?: string } = {};
+    if (!email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      newErrors.email = "Enter a valid email address";
     }
     if (!password) {
       newErrors.password = "Password is required";
-    } else if (password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -32,41 +41,29 @@ export default function LoginPage() {
     if (!validate()) return;
 
     setIsLoading(true);
+    setErrors({});
     showLoading("Authenticating...");
 
-    // Mock an async API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    let role: UserRole | null = null;
-    
-    if (username === "admin" && password === "admin123") {
-      role = "Admin";
-    } else if (username === "officer" && password === "officer123") {
-      role = "Procurement Officer";
-    } else if (username === "manager" && password === "manager123") {
-      role = "Manager/Approver";
-    } else if (username === "vendor" && password === "vendor123") {
-      role = "Vendor";
-    } else if (username === "dev" && password === "dev123") {
-      role = "Dev";
-    }
-
-    if (!role) {
+    try {
+      await login(email.trim(), password);
       closeAlert();
-      setErrors({ username: "Invalid username or password" });
+      await showModalSuccess("Welcome Back!", "Login successful.");
+    } catch (error) {
+      closeAlert();
+      if (error instanceof ApiError) {
+        setErrors({ form: error.message });
+      } else {
+        setErrors({ form: "Unable to sign in. Please try again." });
+      }
+    } finally {
       setIsLoading(false);
-      return;
     }
+  };
 
-    closeAlert();
-    await showModalSuccess("Welcome Back!", "Login successful.");
-
-    login({
-      username,
-      role
-    });
-
-    setIsLoading(false);
+  const fillDemo = (accountEmail: string, accountPassword: string) => {
+    setEmail(accountEmail);
+    setPassword(accountPassword);
+    setErrors({});
   };
 
   return (
@@ -96,16 +93,17 @@ export default function LoginPage() {
         
         <form className={styles.form} onSubmit={handleLogin}>
           <div className={styles.inputGroup}>
-            <label htmlFor="username">Username</label>
+            <label htmlFor="email">Email</label>
             <input
-              id="username"
-              type="text"
-              placeholder="Enter your username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              id="email"
+              type="email"
+              placeholder="Enter your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               disabled={isLoading}
+              autoComplete="email"
             />
-            {errors.username && <span className={styles.errorText}>{errors.username}</span>}
+            {errors.email && <span className={styles.errorText}>{errors.email}</span>}
           </div>
 
           <div className={styles.inputGroup}>
@@ -117,18 +115,48 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={isLoading}
+              autoComplete="current-password"
             />
             {errors.password && <span className={styles.errorText}>{errors.password}</span>}
           </div>
 
-          <a href="#" className={styles.forgotPassword} onClick={(e) => e.preventDefault()}>
+          <Link href="/forgot-password" className={styles.forgotPassword}>
             Forgot password?
-          </a>
+          </Link>
+
+          {errors.form && <span className={styles.errorText}>{errors.form}</span>}
 
           <button type="submit" className={styles.button} disabled={isLoading}>
             {isLoading ? <span className={styles.loadingSpinner}></span> : "Login"}
           </button>
         </form>
+
+        <div className={styles.demoAccounts}>
+          <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "8px", textAlign: "center" }}>
+            Demo accounts (click to fill)
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", justifyContent: "center" }}>
+            {DEMO_ACCOUNTS.map((account) => (
+              <button
+                key={account.email}
+                type="button"
+                onClick={() => fillDemo(account.email, account.password)}
+                disabled={isLoading}
+                style={{
+                  background: "rgba(255,255,255,0.05)",
+                  border: "1px solid rgba(255,255,255,0.15)",
+                  color: "#cbd5e1",
+                  padding: "4px 10px",
+                  borderRadius: "6px",
+                  fontSize: "12px",
+                  cursor: "pointer",
+                }}
+              >
+                {account.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

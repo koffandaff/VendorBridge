@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { ok } from "../../core/http/response.js";
+import { recordAudit } from "../../shared/helpers/audit.helper.js";
 import * as authService from "./auth.service.js";
 import type {
   ChangePasswordRequest,
@@ -13,11 +14,25 @@ import type {
 
 async function login(req: Request, res: Response): Promise<void> {
   const data = await authService.login(req.body as LoginRequest);
+  await recordAudit({
+    userId: data.user.id,
+    action: "AUTH.LOGIN",
+    entityType: "User",
+    entityId: data.user.id,
+    ipAddress: req.ip ?? null,
+  });
   ok(res, data);
 }
 
 async function register(req: Request, res: Response): Promise<void> {
   const data = await authService.register(req.body as RegisterRequest);
+  await recordAudit({
+    userId: data.id,
+    action: "AUTH.REGISTER",
+    entityType: "User",
+    entityId: data.id,
+    ipAddress: req.ip ?? null,
+  });
   ok(res, data, 201);
 }
 
@@ -28,6 +43,15 @@ async function refresh(req: Request, res: Response): Promise<void> {
 
 async function logout(req: Request, res: Response): Promise<void> {
   await authService.logout(req.body as RefreshRequest);
+  if (req.user) {
+    await recordAudit({
+      userId: req.user.id,
+      action: "AUTH.LOGOUT",
+      entityType: "User",
+      entityId: req.user.id,
+      ipAddress: req.ip ?? null,
+    });
+  }
   ok(res, null);
 }
 

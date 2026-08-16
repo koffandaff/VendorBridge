@@ -4,10 +4,17 @@ import { env } from "../config/env.js";
 import { ExternalServiceError } from "../core/errors/app-error.js";
 import { logger } from "../core/logger/logger.js";
 
+interface EmailAttachment {
+  filename: string;
+  content: Buffer;
+  contentType?: string;
+}
+
 interface EmailMessage {
   to: string;
   subject: string;
   text: string;
+  attachments?: EmailAttachment[];
 }
 
 let transporter: Transporter | null = null;
@@ -34,8 +41,17 @@ async function deliver(message: EmailMessage): Promise<void> {
       to: message.to,
       subject: message.subject,
       body: message.text,
+      attachments: message.attachments?.map((attachment) => attachment.filename),
     });
     return;
+  }
+
+  if (env.NODE_ENV !== "production") {
+    logger.info("[email] message prepared", {
+      to: message.to,
+      subject: message.subject,
+      body: message.text,
+    });
   }
 
   try {
@@ -54,6 +70,9 @@ async function deliver(message: EmailMessage): Promise<void> {
 }
 
 export function sendOtpCode(to: string, code: string): Promise<void> {
+  if (env.NODE_ENV !== "production") {
+    logger.info("verification code for user", { to, code });
+  }
   return deliver({
     to,
     subject: "VendorBridge verification code",
@@ -63,11 +82,16 @@ export function sendOtpCode(to: string, code: string): Promise<void> {
       code,
       "",
       `This code expires in ${env.OTP_EXPIRES_MINUTES} minutes. If you did not request it, you can ignore this email.`,
+      "",
+      `To reset your password, open ${env.CLIENT_URL}/reset-password and enter your email address and the code above.`,
     ].join("\n"),
   });
 }
 
 export function sendInviteEmail(to: string, name: string, code: string): Promise<void> {
+  if (env.NODE_ENV !== "production") {
+    logger.info("invitation code for user", { to, code });
+  }
   return deliver({
     to,
     subject: "You have been invited to VendorBridge",
@@ -76,11 +100,54 @@ export function sendInviteEmail(to: string, name: string, code: string): Promise
       "",
       "An administrator has created your VendorBridge account.",
       "",
-      "Use this verification code to verify your email address and set up your account:",
+      `HOW TO ACCEPT YOUR INVITE:`,
       "",
-      code,
+      `1. Open this page in your browser: ${env.CLIENT_URL}/accept-invite`,
+      `2. Enter the email address you were invited with.`,
+      `3. Enter the verification code below: ${code}`,
+      `4. Choose a password and click Set Password - you will be signed in.`,
       "",
-      `This code expires in ${env.OTP_EXPIRES_MINUTES} minutes. If you were not expecting this, you can ignore this email.`,
+      `This code expires in ${env.OTP_EXPIRES_MINUTES} minutes.`,
+      "",
+      "If you were not expecting this email, you can ignore it.",
     ].join("\n"),
+  });
+}
+
+export interface SendInvoiceEmailParams {
+  to: string;
+  vendorName: string;
+  invoiceNumber: string;
+  totalAmount: string;
+  dueDate: Date;
+  itemCount: number;
+}
+
+export function sendInvoiceEmail(
+  params: SendInvoiceEmailParams,
+  pdfBuffer: Buffer
+): Promise<void> {
+  return deliver({
+    to: params.to,
+    subject: `Invoice ${params.invoiceNumber} from VendorBridge`,
+    text: [
+      `Hi ${params.vendorName},`,
+      "",
+      `Please find attached invoice ${params.invoiceNumber} from VendorBridge.`,
+      "",
+      `Invoice number: ${params.invoiceNumber}`,
+      `Total amount: ${params.totalAmount}`,
+      `Due date: ${params.dueDate.toISOString().slice(0, 10)}`,
+      `Line items: ${params.itemCount}`,
+      "",
+      "If you have any questions about this invoice, please reply to this email.",
+    ].join("\n"),
+    attachments: [
+      {
+        filename: `${params.invoiceNumber}.pdf`,
+        content: pdfBuffer,
+        contentType: "application/pdf",
+      },
+    ],
   });
 }

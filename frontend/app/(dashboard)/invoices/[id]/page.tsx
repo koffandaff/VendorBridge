@@ -1,41 +1,156 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { MOCK_PURCHASE_ORDERS } from "@/lib/mockData";
+import { downloadInvoicePdf, fetchInvoiceById, markInvoicePaid, sendInvoiceEmail } from "@/lib/data";
+import type { InvoiceDto } from "@/lib/types";
+import { formatCurrency, formatDate, toNumber } from "@/lib/format";
 import styles from "./invoice.module.css";
-import { showLoading, showModalSuccess, closeAlert } from "@/lib/alerts";
+import { showLoading, showModalSuccess, showToastError, closeAlert } from "@/lib/alerts";
 
 export default function InvoiceDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const poId = params.id as string;
+  const invoiceId = params.id as string;
 
-  const po = MOCK_PURCHASE_ORDERS.find((p) => p.id === poId) || {
-    id: "PO-001",
-    poNumber: "PO-2025-0068",
-    vendor: "Infra supplies pvt ltd",
-    poDate: "21 may, 2025",
-    grandTotal: 200010,
-    status: "Pending Payment"
+  const [invoice, setInvoice] = useState<InvoiceDto | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [emailLoading, setEmailLoading] = useState(false);
+
+  const loadInvoice = async () => {
+    const data = await fetchInvoiceById(invoiceId);
+    setInvoice(data || null);
   };
 
-  const invoiceNumber = `INV-${po.poNumber.replace('PO-', '')}`;
+  useEffect(() => {
+    const load = async () => {
+      try {
+        await loadInvoice();
+      } catch (error) {
+        console.error("Failed to load invoice", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (invoiceId) load();
+  }, [invoiceId]);
+
+  const handleMarkPaid = async () => {
+    setActionLoading(true);
+    showLoading("Processing payment...");
+    try {
+      await markInvoicePaid(invoiceId);
+      closeAlert();
+      await showModalSuccess("Success", "Payment marked as paid!");
+      await loadInvoice();
+    } catch (error) {
+      closeAlert();
+      showToastError(error instanceof Error ? error.message : "Failed to mark invoice as paid");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!invoice) return;
+    setPdfLoading(true);
+    showLoading("Downloading PDF...");
+    try {
+      await downloadInvoicePdf(invoice.id, invoice.invoiceNumber);
+      closeAlert();
+      await showModalSuccess("Success", "Invoice PDF downloaded");
+    } catch (error) {
+      closeAlert();
+      showToastError(error instanceof Error ? error.message : "Failed to download PDF");
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
+  const handleEmailInvoice = async () => {
+    setEmailLoading(true);
+    showLoading("Sending email...");
+    try {
+      const updated = await sendInvoiceEmail(invoiceId);
+      closeAlert();
+      await showModalSuccess("Success", `Invoice emailed to ${updated.vendor?.name ?? "vendor"}`);
+      await loadInvoice();
+    } catch (error) {
+      closeAlert();
+      showToastError(error instanceof Error ? error.message : "Failed to send invoice email");
+    } finally {
+      setEmailLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", minHeight: "300px" }}>
+        <div style={{
+          width: "40px",
+          height: "40px",
+          border: "3px solid rgba(255, 255, 255, 0.1)",
+          borderRadius: "50%",
+          borderTopColor: "#10b981",
+          animation: "spin 1s ease-in-out infinite"
+        }}></div>
+      </div>
+    );
+  }
+
+  if (!invoice) {
+    return (
+      <div style={{ padding: "40px", color: "#f8fafc" }}>
+        <h2>Invoice Not Found</h2>
+        <button
+          onClick={() => router.push('/invoices')}
+          style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "white", padding: "8px 16px", borderRadius: "8px", marginTop: "16px", cursor: "pointer" }}
+        >
+          Go Back
+        </button>
+      </div>
+    );
+  }
+
+  const vendorAddress = [
+    invoice.vendor?.address,
+    invoice.vendor?.city,
+    invoice.vendor?.state,
+    invoice.vendor?.country,
+  ].filter(Boolean).join(", ");
 
   return (
     <div className={styles.container}>
       {/* Header */}
       <div className={styles.headerRow}>
         <div className={styles.headerLeft}>
-          <h1 className={styles.title}>Purchase Order & Invoice</h1>
+          <h1 className={styles.title}>Invoice {invoice.invoiceNumber}</h1>
           <p className={styles.subtitle}>
-            PO-2024-auto-generated after approval
+            {invoice.purchaseOrder?.poNumber ?? "PO"} — generated {formatDate(invoice.invoiceDate)}
           </p>
         </div>
         <div className={styles.headerActions}>
-          <button className={styles.actionBtn}>Download PDF</button>
-          <button className={styles.actionBtn}>Print</button>
-          <button className={styles.actionBtn}>Email invoice</button>
+          <button
+            className={styles.actionBtn}
+            onClick={handleDownloadPdf}
+            disabled={pdfLoading}
+          >
+            {pdfLoading ? "Downloading..." : "Download PDF"}
+          </button>
+          <button className={styles.actionBtn} onClick={() => window.print()}>
+            Print
+          </button>
+          {(invoice.status === "ISSUED" || invoice.status === "SENT") && (
+            <button
+              className={styles.actionBtn}
+              onClick={handleEmailInvoice}
+              disabled={emailLoading}
+            >
+              {emailLoading ? "Sending..." : "Email invoice"}
+            </button>
+          )}
         </div>
       </div>
 
@@ -45,36 +160,36 @@ export default function InvoiceDetailPage() {
           <div className={styles.infoColumn}>
             <div className={styles.infoLabel}>Bill to:</div>
             <div className={styles.infoText}>
-              your Organization Name<br />
-              123 business park, ahmedabad<br />
-              GSTIN:253834384FB
+              Your Organization<br />
+              Organization HQ<br />
+              GSTIN: 253834384FB
             </div>
           </div>
           <div className={styles.infoColumn}>
             <div className={styles.infoLabel}>Vendor</div>
             <div className={styles.infoText}>
-              {po.vendor}<br />
-              456, industrial estate, surat<br />
-              GSTIN: 343434DB4523
+              {invoice.vendor?.name ?? "—"}<br />
+              {vendorAddress || "—"}<br />
+              GSTIN: {invoice.vendor?.gstNumber ?? "—"}
             </div>
           </div>
         </div>
-        
+
         <div className={styles.infoRow} style={{ padding: "16px 24px" }}>
           <div className={styles.infoColumn} style={{ gap: "8px" }}>
             <div style={{ display: "flex", gap: "8px", fontSize: "14px", color: "#f8fafc" }}>
-              <span style={{ color: "#94a3b8" }}>PO Number:</span> {po.poNumber}
+              <span style={{ color: "#94a3b8" }}>PO Number:</span> {invoice.purchaseOrder?.poNumber ?? "—"}
             </div>
             <div style={{ display: "flex", gap: "8px", fontSize: "14px", color: "#f8fafc" }}>
-              <span style={{ color: "#94a3b8" }}>PO date:</span> {po.poDate}
+              <span style={{ color: "#94a3b8" }}>PO date:</span> {invoice.purchaseOrder ? formatDate(invoice.purchaseOrder.orderDate) : "—"}
             </div>
           </div>
           <div className={styles.infoColumn} style={{ gap: "8px" }}>
             <div style={{ display: "flex", gap: "8px", fontSize: "14px", color: "#f8fafc" }}>
-              <span style={{ color: "#94a3b8" }}>invoice date:</span> 22 may 2025
+              <span style={{ color: "#94a3b8" }}>Invoice date:</span> {formatDate(invoice.invoiceDate)}
             </div>
             <div style={{ display: "flex", gap: "8px", fontSize: "14px", color: "#f8fafc" }}>
-              <span style={{ color: "#94a3b8" }}>Due date:</span> 21 june 2025
+              <span style={{ color: "#94a3b8" }}>Due date:</span> {formatDate(invoice.dueDate)}
             </div>
           </div>
         </div>
@@ -92,18 +207,22 @@ export default function InvoiceDetailPage() {
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>Ergonomic chair</td>
-              <td>25</td>
-              <td>3500</td>
-              <td className={styles.alignRight}>87,500</td>
-            </tr>
-            <tr>
-              <td>Tech Core LTD</td>
-              <td>10</td>
-              <td>8,200</td>
-              <td className={styles.alignRight}>82000</td>
-            </tr>
+            {(invoice.items ?? []).length > 0 ? (
+              invoice.items!.map((item) => (
+                <tr key={item.id}>
+                  <td>{item.description}</td>
+                  <td>{toNumber(item.quantity)}</td>
+                  <td>{formatCurrency(item.unitPrice)}</td>
+                  <td className={styles.alignRight}>{formatCurrency(item.totalAmount)}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={4} style={{ textAlign: "center", padding: "16px", color: "#64748b" }}>
+                  No line items available.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
 
@@ -111,19 +230,15 @@ export default function InvoiceDetailPage() {
           <div className={styles.summaryContent}>
             <div className={styles.summaryLine}>
               <span>Subtotal</span>
-              <span>1,69,500</span>
+              <span>{formatCurrency(invoice.subtotal)}</span>
             </div>
             <div className={styles.summaryLine}>
-              <span>CGST(9%)</span>
-              <span>15,255</span>
-            </div>
-            <div className={styles.summaryLine}>
-              <span>SGST(9%)</span>
-              <span>15,255</span>
+              <span>Tax</span>
+              <span>{formatCurrency(invoice.taxAmount)}</span>
             </div>
             <div className={styles.grandTotalLine}>
               <span>Grand total</span>
-              <span>2,00,010</span>
+              <span>{formatCurrency(invoice.totalAmount)}</span>
             </div>
           </div>
         </div>
@@ -131,20 +246,17 @@ export default function InvoiceDetailPage() {
 
       {/* Footer */}
       <div className={styles.footer}>
-        <span>status: <span className={styles.statusBadge}>Pending Payment</span></span>
-        <button 
-          className={styles.markPaid} 
-          style={{ background: "transparent", border: "none", padding: 0 }}
-          onClick={async () => {
-            showLoading("Processing payment...");
-            await new Promise(resolve => setTimeout(resolve, 800));
-            closeAlert();
-            await showModalSuccess("Success", "Payment marked as paid!");
-            router.push('/invoices');
-          }}
-        >
-          Mark as Paid
-        </button>
+        <span>status: <span className={styles.statusBadge}>{invoice.status}</span></span>
+        {invoice.status !== "PAID" && invoice.status !== "CANCELLED" && (
+          <button
+            className={styles.markPaid}
+            style={{ background: "transparent", border: "none", padding: 0 }}
+            onClick={handleMarkPaid}
+            disabled={actionLoading}
+          >
+            {actionLoading ? "Marking..." : "Mark as Paid"}
+          </button>
+        )}
       </div>
     </div>
   );
