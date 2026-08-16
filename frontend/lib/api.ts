@@ -118,7 +118,7 @@ export interface ListResult<T> {
   pagination: PaginationMeta;
 }
 
-export async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+export async function requestEnvelope<T>(path: string, options: RequestInit = {}): Promise<ApiSuccess<T>> {
   const url = `${API_BASE}${API_PREFIX}${path}`;
 
   const buildOptions = (): RequestInit => {
@@ -146,7 +146,11 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
     redirectToLogin();
   }
 
-  return (await parseEnvelope<T>(response)).data;
+  return parseEnvelope<T>(response);
+}
+
+export async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  return (await requestEnvelope<T>(path, options)).data;
 }
 
 export const api = {
@@ -167,7 +171,7 @@ export const api = {
   },
   list<T>(path: string): Promise<ListResult<T>> {
     return (async () => {
-      const envelope = await request<ApiSuccess<T>>(path, { method: "GET" });
+      const envelope = await requestEnvelope<T[]>(path, { method: "GET" });
       const data = envelope.data as T[] | { items: T[] } | null | undefined;
       const items = Array.isArray(data) ? data : data?.items ?? [];
       return {
