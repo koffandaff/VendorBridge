@@ -44,3 +44,19 @@ invoiceRouter.patch(
   validateRequest({ params: uuidParamSchema, body: updateInvoiceStatusSchema }),
   controller.updateInvoiceStatus
 );
+
+invoiceRouter.get(
+  "/:id/pdf",
+  authenticate,
+  requirePermission("invoices:generate", "invoices:view"),
+  validateRequest({ params: uuidParamSchema }),
+  controller.downloadInvoicePdf
+);
+
+invoiceRouter.post(
+  "/:id/email",
+  authenticate,
+  requirePermission("invoices:generate"),
+  validateRequest({ params: uuidParamSchema }),
+  controller.emailInvoice
+);
