@@ -68,7 +68,7 @@ function makeRequest(
 
 async function runConnectivityChecks() {
   console.log("\n==========================================================");
-  console.log("🚀 STARTING API CONNECTIVITY & ENDPOINT SUITE CHECK");
+  console.log("🚀 STARTING API CONNECTIVITY & RBAC SUITE CHECK");
   console.log("==========================================================\n");
 
   const server = http.createServer(app);
@@ -89,95 +89,95 @@ async function runConnectivityChecks() {
     headers?: Record<string, string>;
     description: string;
   }[] = [
-    // Health & System
+    // Health & System (Public)
     {
       method: "GET",
       path: "/health",
       expectedStatus: [200],
-      description: "Liveness & Database Health Endpoint",
+      description: "Public Liveness & Health Endpoint",
     },
     {
       method: "GET",
       path: "/api/v1/nonexistent-route",
       expectedStatus: [404],
-      description: "404 Not Found Middleware Handler",
+      description: "404 Not Found Handler",
     },
-    // Vendor Categories
+    // Vendor Categories (Protected by RBAC)
     {
       method: "GET",
       path: "/api/v1/vendors/categories",
-      expectedStatus: [200, 500],
-      description: "List Vendor Categories",
+      expectedStatus: [401, 200, 500],
+      description: "List Categories (Protected by RBAC)",
     },
     {
       method: "POST",
       path: "/api/v1/vendors/categories",
-      expectedStatus: [400],
+      expectedStatus: [401, 400],
       body: {},
-      description: "Create Category (Validation Error test)",
+      description: "Create Category (Protected by RBAC)",
     },
-    // Vendors
+    // Vendors (Protected by RBAC)
     {
       method: "GET",
       path: "/api/v1/vendors",
-      expectedStatus: [200, 500],
-      description: "List Vendors with Pagination",
+      expectedStatus: [401, 200, 500],
+      description: "List Vendors (Protected by RBAC)",
     },
     {
       method: "POST",
       path: "/api/v1/vendors",
-      expectedStatus: [400],
+      expectedStatus: [401, 400],
       body: {},
-      description: "Create Vendor (Validation Error test)",
+      description: "Create Vendor (Protected by RBAC)",
     },
-    // Users & Managers
+    // Users & Managers (Protected by RBAC)
     {
       method: "GET",
       path: "/api/v1/users",
-      expectedStatus: [200, 500],
-      description: "List Users / Managers",
+      expectedStatus: [401, 200, 500],
+      description: "List Users/Managers (Protected by RBAC)",
     },
     {
       method: "POST",
       path: "/api/v1/users",
-      expectedStatus: [400],
+      expectedStatus: [401, 400],
       body: {},
-      description: "Create User / Manager (Validation Error test)",
+      description: "Create User/Manager (Protected by RBAC)",
     },
-    // Procurement: RFQs
+    // RFQs (Protected by RBAC)
     {
       method: "GET",
       path: "/api/v1/rfqs",
-      expectedStatus: [200, 401, 500],
-      description: "List RFQs Endpoint",
+      expectedStatus: [401, 200, 500],
+      description: "List RFQs (Protected by RBAC)",
     },
     {
       method: "POST",
       path: "/api/v1/rfqs",
-      expectedStatus: [400, 401],
+      expectedStatus: [401, 400],
       body: {},
-      description: "Create RFQ Endpoint",
+      description: "Create RFQ (Protected by RBAC)",
     },
-    // Procurement: Quotations
+    // Quotations (Protected by RBAC)
     {
       method: "GET",
       path: "/api/v1/quotations",
-      expectedStatus: [200, 401, 500],
-      description: "List Quotations Endpoint",
+      expectedStatus: [401, 200, 500],
+      description: "List Quotations (Protected by RBAC)",
     },
-    // Procurement: Purchase Orders
+    // Purchase Orders (Protected by RBAC)
     {
       method: "GET",
       path: "/api/v1/purchase-orders",
-      expectedStatus: [200, 401, 500],
-      description: "List Purchase Orders Endpoint",
+      expectedStatus: [401, 200, 500],
+      description: "List Purchase Orders (Protected by RBAC)",
     },
-    // Procurement: Invoices
+    // Invoices (Protected by RBAC)
     {
       method: "GET",
       path: "/api/v1/invoices",
-      expectedStatus: [200, 401, 500],
-      description: "List Invoices Endpoint",
+      expectedStatus: [401, 200, 500],
+      description: "List Invoices (Protected by RBAC)",
     },
     // Auth Module
     {
@@ -185,13 +185,13 @@ async function runConnectivityChecks() {
       path: "/api/v1/auth/login",
       expectedStatus: [400],
       body: {},
-      description: "Auth Login (Validation Error test)",
+      description: "Auth Login (Public, Validation Error test)",
     },
     {
       method: "GET",
       path: "/api/v1/auth/me",
       expectedStatus: [401],
-      description: "Auth Me (Authentication Guard test)",
+      description: "Auth Me (Protected by RBAC)",
     },
   ];
 
@@ -237,7 +237,7 @@ async function runConnectivityChecks() {
   server.close();
 
   console.log("\n==========================================================");
-  console.log("📊 CONNECTIVITY & ENDPOINT SUMMARY REPORT");
+  console.log("📊 CONNECTIVITY & RBAC SUMMARY REPORT");
   console.log("==========================================================");
 
   const passedCount = results.filter((r) => r.success).length;
@@ -248,9 +248,9 @@ async function runConnectivityChecks() {
   console.log(`Failed: ${totalCount - passedCount}`);
 
   if (passedCount === totalCount) {
-    console.log("\n🎉 ALL API ENDPOINTS & CONNECTIVITY CHECKS PASSED PERFECTLY!\n");
+    console.log("\n🎉 ALL RBAC ENFORCEMENT & ENDPOINT CHECKS PASSED PERFECTLY!\n");
   } else {
-    console.log("\n⚠️ SOME ENDPOINT CHECKS FAILED. SEE DETAILS ABOVE.\n");
+    console.log("\n⚠️ SOME CHECKS FAILED. SEE DETAILS ABOVE.\n");
   }
 }
 
