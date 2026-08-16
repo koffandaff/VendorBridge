@@ -17,6 +17,34 @@ export interface LoginResponse {
   tokens: TokenPair;
 }
 
+export interface UserListItemDto {
+  id: string;
+  name: string;
+  email: string;
+  role: BackendRole;
+  phone: string | null;
+  vendorId: string | null;
+  isActive: boolean;
+  emailVerified: boolean;
+  lastLoginAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type NotificationType = "SYSTEM" | "PURCHASE_ORDER" | "INVOICE" | "APPROVAL" | "QUOTATION" | "GENERAL";
+
+export interface NotificationDto {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  entityType: string | null;
+  entityId: string | null;
+  isRead: boolean;
+  readAt: string | null;
+  createdAt: string;
+}
+
 export interface VendorCategory {
   id: string;
   name: string;

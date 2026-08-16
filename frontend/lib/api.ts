@@ -57,7 +57,7 @@ export function clearTokens(): void {
   window.localStorage.removeItem(REFRESH_TOKEN_KEY);
 }
 
-async function parseEnvelope<T>(response: Response): Promise<T> {
+async function parseEnvelope<T>(response: Response): Promise<ApiSuccess<T>> {
   let body: ApiEnvelope<T> | null = null;
 
   try {
@@ -75,7 +75,7 @@ async function parseEnvelope<T>(response: Response): Promise<T> {
     );
   }
 
-  return body.data;
+  return body;
 }
 
 async function refreshAccessToken(): Promise<boolean> {
@@ -113,7 +113,14 @@ function redirectToLogin(): void {
   }
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+export interface ListResult<T> {
+  items: T[];
+  pagination: PaginationMeta;
+}
+
+const EMPTY_PAGINATION: PaginationMeta = { page: 1, limit: 0, totalItems: 0, totalPages: 0 };
+
+export async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE}${API_PREFIX}${path}`;
 
   const buildOptions = (): RequestInit => {
@@ -141,7 +148,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     redirectToLogin();
   }
 
-  return parseEnvelope<T>(response);
+  return (await parseEnvelope<T>(response)).data;
 }
 
 export const api = {
@@ -159,6 +166,15 @@ export const api = {
   },
   delete<T>(path: string): Promise<T> {
     return request<T>(path, { method: "DELETE" });
+  },
+  list<T>(path: string): Promise<ListResult<T>> {
+    return (async () => {
+      const envelope = await request<ApiSuccess<T>>(path, { method: "GET" });
+      return {
+        items: envelope.data as T[],
+        pagination: envelope.pagination ?? EMPTY_PAGINATION,
+      };
+    })();
   },
 };
 
