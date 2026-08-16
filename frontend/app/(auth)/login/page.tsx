@@ -35,16 +35,24 @@ export default function LoginPage() {
     // Mock an async API call
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
-    // Fake user data with a role based on the username for demonstration
-    let role: UserRole = "Vendor";
-    const lowerUsername = username.toLowerCase();
+    let role: UserRole | null = null;
     
-    if (lowerUsername.includes("admin")) {
+    if (username === "admin" && password === "admin123") {
       role = "Admin";
-    } else if (lowerUsername.includes("procurement")) {
+    } else if (username === "officer" && password === "officer123") {
       role = "Procurement Officer";
-    } else if (lowerUsername.includes("manager")) {
+    } else if (username === "manager" && password === "manager123") {
       role = "Manager/Approver";
+    } else if (username === "vendor" && password === "vendor123") {
+      role = "Vendor";
+    } else if (username === "dev" && password === "dev123") {
+      role = "Dev";
+    }
+
+    if (!role) {
+      setErrors({ username: "Invalid username or password" });
+      setIsLoading(false);
+      return;
     }
 
     login({
