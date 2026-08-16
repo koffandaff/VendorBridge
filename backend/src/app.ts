@@ -5,10 +5,11 @@ import "./config/env.js";
 import { API_PREFIX, BODY_LIMIT } from "./config/constants.js";
 import { corsOrigins } from "./config/env.js";
 import { NotFoundError } from "./core/errors/app-error.js";
-import { errorMiddleware } from "./core/errors/error.middleware.js";
+import { errorMiddleware } from "./core/middleware/error.middleware.js";
 import { requestLoggerMiddleware } from "./core/logger/request-logger.js";
 import { requestIdMiddleware } from "./core/middleware/request-id.js";
 import { authRouter } from "./modules/auth/index.js";
+import { vendorRouter } from "./modules/vendors/index.js";
 import { prisma } from "./shared/prisma.js";
 
 export const app = express();
@@ -34,6 +35,9 @@ app.get("/health", async (_req, res) => {
 });
 
 app.use(`${API_PREFIX}/auth`, authRouter);
+
+// Vendor routes
+app.use("/api/v1/vendors", vendorRouter);
 
 app.use((_req, _res, next) => {
   next(new NotFoundError("route not found"));
