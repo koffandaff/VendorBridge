@@ -197,3 +197,48 @@ export function toQueryString(params: Record<string, string | number | boolean |
   const query = searchParams.toString();
   return query ? `?${query}` : "";
 }
+
+export async function downloadFile(path: string, filename: string): Promise<void> {
+  const url = `${API_BASE}${API_PREFIX}${path}`;
+
+  const buildOptions = (): RequestInit => {
+    const headers: Record<string, string> = {};
+    const token = getAccessToken();
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+    return { headers };
+  };
+
+  let response = await fetch(url, buildOptions());
+
+  if (response.status === 401 && getRefreshToken()) {
+    const refreshed = await refreshAccessToken();
+    if (refreshed) {
+      response = await fetch(url, buildOptions());
+    }
+  }
+
+  if (response.status === 401) {
+    redirectToLogin();
+    return;
+  }
+
+  if (!response.ok) {
+    throw new ApiError(
+      `Download failed with status ${response.status}`,
+      "DOWNLOAD_FAILED",
+      response.status
+    );
+  }
+
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = objectUrl;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(objectUrl);
+}

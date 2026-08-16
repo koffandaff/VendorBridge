@@ -4,10 +4,17 @@ import { env } from "../config/env.js";
 import { ExternalServiceError } from "../core/errors/app-error.js";
 import { logger } from "../core/logger/logger.js";
 
+interface EmailAttachment {
+  filename: string;
+  content: Buffer;
+  contentType?: string;
+}
+
 interface EmailMessage {
   to: string;
   subject: string;
   text: string;
+  attachments?: EmailAttachment[];
 }
 
 let transporter: Transporter | null = null;
@@ -34,6 +41,7 @@ async function deliver(message: EmailMessage): Promise<void> {
       to: message.to,
       subject: message.subject,
       body: message.text,
+      attachments: message.attachments?.map((attachment) => attachment.filename),
     });
     return;
   }
@@ -103,5 +111,43 @@ export function sendInviteEmail(to: string, name: string, code: string): Promise
       "",
       "If you were not expecting this email, you can ignore it.",
     ].join("\n"),
+  });
+}
+
+export interface SendInvoiceEmailParams {
+  to: string;
+  vendorName: string;
+  invoiceNumber: string;
+  totalAmount: string;
+  dueDate: Date;
+  itemCount: number;
+}
+
+export function sendInvoiceEmail(
+  params: SendInvoiceEmailParams,
+  pdfBuffer: Buffer
+): Promise<void> {
+  return deliver({
+    to: params.to,
+    subject: `Invoice ${params.invoiceNumber} from VendorBridge`,
+    text: [
+      `Hi ${params.vendorName},`,
+      "",
+      `Please find attached invoice ${params.invoiceNumber} from VendorBridge.`,
+      "",
+      `Invoice number: ${params.invoiceNumber}`,
+      `Total amount: ${params.totalAmount}`,
+      `Due date: ${params.dueDate.toISOString().slice(0, 10)}`,
+      `Line items: ${params.itemCount}`,
+      "",
+      "If you have any questions about this invoice, please reply to this email.",
+    ].join("\n"),
+    attachments: [
+      {
+        filename: `${params.invoiceNumber}.pdf`,
+        content: pdfBuffer,
+        contentType: "application/pdf",
+      },
+    ],
   });
 }

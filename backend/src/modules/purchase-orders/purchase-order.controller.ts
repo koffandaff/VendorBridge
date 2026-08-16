@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { PurchaseOrderService } from "./purchase-order.service.js";
-import { sendSuccess, sendCreated, sendPaginated } from "../../core/http/response.js";
+import { sendSuccess, sendCreated, sendPaginated, ok } from "../../core/http/response.js";
 import type {
   CreatePurchaseOrderInput,
   UpdatePurchaseOrderStatusInput,
@@ -60,6 +60,22 @@ export class PurchaseOrderController {
         req.body as UpdatePurchaseOrderStatusInput
       );
       sendSuccess(res, purchaseOrder, "Purchase order status updated successfully");
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  acknowledgePurchaseOrder = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      const purchaseOrder = await this.service.acknowledgePurchaseOrder(
+        getParam(req, "id"),
+        req.user!.id
+      );
+      ok(res, purchaseOrder, 200);
     } catch (error) {
       next(error);
     }

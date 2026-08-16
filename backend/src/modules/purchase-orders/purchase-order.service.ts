@@ -148,4 +148,26 @@ export class PurchaseOrderService {
 
     return this.repository.updateStatus(id, input.status);
   }
+
+  async acknowledgePurchaseOrder(id: string, userId: string) {
+    const purchaseOrder = await this.getPurchaseOrderById(id);
+
+    if (purchaseOrder.status !== "SENT") {
+      throw new ConflictError(
+        `Purchase order with status '${purchaseOrder.status}' cannot be acknowledged`
+      );
+    }
+
+    const acknowledged = await this.repository.updateStatus(id, "ACKNOWLEDGED");
+
+    await recordAudit({
+      userId,
+      action: "PO_ACKNOWLEDGED",
+      entityType: "PurchaseOrder",
+      entityId: id,
+      newValue: { poNumber: purchaseOrder.poNumber, status: "ACKNOWLEDGED" },
+    });
+
+    return acknowledged;
+  }
 }
