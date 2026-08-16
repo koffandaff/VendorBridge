@@ -7,10 +7,14 @@ export interface AuthUserDto {
   role: BackendRole;
 }
 
-export interface LoginResponse {
-  user: AuthUserDto;
+export interface TokenPair {
   accessToken: string;
   refreshToken: string;
+}
+
+export interface LoginResponse {
+  user: AuthUserDto;
+  tokens: TokenPair;
 }
 
 export interface VendorCategory {
