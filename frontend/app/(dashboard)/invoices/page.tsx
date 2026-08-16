@@ -1,44 +1,94 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import styles from "../purchase-orders/po-page.module.css"; // Reuse the PO page styles
-import { MOCK_PURCHASE_ORDERS, POStatus } from "@/lib/mockData";
+import { fetchInvoices } from "@/lib/data";
+import type { InvoiceDto } from "@/lib/types";
+import { formatCurrency, formatDate } from "@/lib/format";
 
-type FilterTab = "All" | POStatus;
+type FilterTab = "All" | "Pending Payment" | "Paid" | "Overdue" | "Cancelled";
+
+const TABS: FilterTab[] = ["All", "Pending Payment", "Paid", "Overdue", "Cancelled"];
+
+const STATUS_LABEL: Record<InvoiceDto["status"], string> = {
+  DRAFT: "Pending Payment",
+  ISSUED: "Pending Payment",
+  SENT: "Pending Payment",
+  PAID: "Paid",
+  OVERDUE: "Overdue",
+  CANCELLED: "Cancelled",
+};
 
 export default function InvoicesPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<FilterTab>("All");
+  const [invoices, setInvoices] = useState<InvoiceDto[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // In a real app, you would have a separate MOCK_INVOICES array.
-  // For this demo, we'll reuse the purchase orders and pretend they are invoices.
-  const counts = {
-    "All": MOCK_PURCHASE_ORDERS.length,
-    "Pending Payment": MOCK_PURCHASE_ORDERS.filter(po => po.status === "Pending Payment").length,
-    "Paid": MOCK_PURCHASE_ORDERS.filter(po => po.status === "Paid").length,
-    "Overdue": MOCK_PURCHASE_ORDERS.filter(po => po.status === "Overdue").length,
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await fetchInvoices();
+        setInvoices(data);
+      } catch (error) {
+        console.error("Failed to load invoices", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  const counts: Record<FilterTab, number> = {
+    All: invoices.length,
+    "Pending Payment": invoices.filter((invoice) => STATUS_LABEL[invoice.status] === "Pending Payment").length,
+    Paid: invoices.filter((invoice) => STATUS_LABEL[invoice.status] === "Paid").length,
+    Overdue: invoices.filter((invoice) => STATUS_LABEL[invoice.status] === "Overdue").length,
+    Cancelled: invoices.filter((invoice) => STATUS_LABEL[invoice.status] === "Cancelled").length,
   };
 
-  const filteredInvoices = MOCK_PURCHASE_ORDERS.filter((po) => {
-    const matchesTab = activeTab === "All" || po.status === activeTab;
+  const filteredInvoices = invoices.filter((invoice) => {
+    const matchesTab = activeTab === "All" || STATUS_LABEL[invoice.status] === activeTab;
     const lowerQuery = searchQuery.toLowerCase();
-    const matchesSearch = 
-      po.poNumber.toLowerCase().includes(lowerQuery) ||
-      po.vendor.toLowerCase().includes(lowerQuery);
+    const matchesSearch =
+      invoice.invoiceNumber.toLowerCase().includes(lowerQuery) ||
+      invoice.vendor?.name?.toLowerCase().includes(lowerQuery);
     return matchesTab && matchesSearch;
   });
 
-  const getStatusBadgeClass = (status: POStatus) => {
-    switch(status) {
-      case "Pending Payment": return styles.badgePending;
-      case "Paid": return styles.badgePaid;
-      case "Overdue": return styles.badgeOverdue;
-      default: return "";
+  const getStatusBadgeClass = (status: InvoiceDto["status"]) => {
+    switch (status) {
+      case "DRAFT":
+      case "ISSUED":
+      case "SENT":
+        return styles.badgePending;
+      case "PAID":
+        return styles.badgePaid;
+      case "OVERDUE":
+      case "CANCELLED":
+        return styles.badgeOverdue;
+      default:
+        return "";
     }
   };
+
+  if (loading) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100%", minHeight: "300px" }}>
+        <div style={{
+          width: "40px",
+          height: "40px",
+          border: "3px solid rgba(255, 255, 255, 0.1)",
+          borderRadius: "50%",
+          borderTopColor: "#10b981",
+          animation: "spin 1s ease-in-out infinite"
+        }}></div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container} style={{ maxWidth: 'none' }}>
@@ -52,18 +102,18 @@ export default function InvoicesPage() {
       <div className={styles.searchAndFilter}>
         <div className={styles.searchBar}>
           <Search className={styles.searchIcon} size={20} />
-          <input 
-            type="text" 
-            className={styles.searchInput} 
-            placeholder="Search by Invoice number, vendor..." 
+          <input
+            type="text"
+            className={styles.searchInput}
+            placeholder="Search by Invoice number, vendor..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
 
         <div className={styles.tabsRow}>
-          {(["All", "Pending Payment", "Paid", "Overdue"] as FilterTab[]).map(tab => (
-            <button 
+          {TABS.map(tab => (
+            <button
               key={tab}
               className={`${styles.tabBtn} ${activeTab === tab ? styles.activeTab : ""}`}
               onClick={() => setActiveTab(tab)}
@@ -90,22 +140,20 @@ export default function InvoicesPage() {
               {filteredInvoices.length > 0 ? (
                 filteredInvoices.map(invoice => (
                   <tr key={invoice.id}>
-                    <td style={{ fontWeight: 600, color: "#f8fafc" }}>
-                      INV-{invoice.poNumber.replace('PO-', '')}
-                    </td>
-                    <td>{invoice.vendor}</td>
-                    <td>{invoice.poDate}</td>
-                    <td>{invoice.dueDate}</td>
+                    <td style={{ fontWeight: 600, color: "#f8fafc" }}>{invoice.invoiceNumber}</td>
+                    <td>{invoice.vendor?.name ?? "—"}</td>
+                    <td>{formatDate(invoice.invoiceDate)}</td>
+                    <td>{formatDate(invoice.dueDate)}</td>
                     <td style={{ fontWeight: 600, color: "#10b981" }}>
-                      ${invoice.grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                      {formatCurrency(invoice.totalAmount)}
                     </td>
                     <td>
                       <span className={`${styles.badge} ${getStatusBadgeClass(invoice.status)}`}>
-                        {invoice.status}
+                        {STATUS_LABEL[invoice.status]}
                       </span>
                     </td>
                     <td>
-                      <button 
+                      <button
                         className={styles.viewButton}
                         onClick={() => router.push(`/invoices/${invoice.id}`)}
                       >

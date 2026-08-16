@@ -15,6 +15,8 @@ import { rfqRouter } from "./modules/rfqs/index.js";
 import { quotationRouter } from "./modules/quotations/index.js";
 import { purchaseOrderRouter } from "./modules/purchase-orders/index.js";
 import { invoiceRouter } from "./modules/invoices/index.js";
+import { activityRouter } from "./modules/activity/index.js";
+import { analyticsRouter } from "./modules/analytics/index.js";
 import { prisma } from "./shared/prisma.js";
 
 export const app = express();
@@ -54,6 +56,10 @@ app.use(`${API_PREFIX}/rfqs`, rfqRouter);
 app.use(`${API_PREFIX}/quotations`, quotationRouter);
 app.use(`${API_PREFIX}/purchase-orders`, purchaseOrderRouter);
 app.use(`${API_PREFIX}/invoices`, invoiceRouter);
+
+// Governance routes
+app.use(`${API_PREFIX}/activity`, activityRouter);
+app.use(`${API_PREFIX}/analytics`, analyticsRouter);
 
 // 404 Handler
 app.use((_req, _res, next) => {

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, User, Mail, Phone, MapPin, Briefcase } from "lucide-react";
-import { fetchVendors, Vendor } from "@/lib/data";
+import { fetchVendorById, Vendor } from "@/lib/data";
 
 export default function VendorProfilePage() {
   const params = useParams();
@@ -16,8 +16,7 @@ export default function VendorProfilePage() {
   useEffect(() => {
     const loadVendor = async () => {
       try {
-        const allVendors = await fetchVendors();
-        const found = allVendors.find(v => v.id === vendorId);
+        const found = await fetchVendorById(vendorId);
         setVendor(found || null);
       } catch (error) {
         console.error("Failed to fetch vendor", error);
@@ -101,7 +100,7 @@ export default function VendorProfilePage() {
                 <div style={{ background: "rgba(255, 255, 255, 0.05)", padding: "10px", borderRadius: "8px", color: "#f8fafc" }}><User size={20} /></div>
                 <div>
                   <div style={{ fontSize: "13px", color: "#64748b", marginBottom: "4px" }}>Contact Person</div>
-                  <div style={{ fontSize: "15px", color: "#f8fafc", fontWeight: 500 }}>{vendor.contactPerson || 'John Doe'}</div>
+                  <div style={{ fontSize: "15px", color: "#f8fafc", fontWeight: 500 }}>{vendor.contactPerson || "—"}</div>
                 </div>
               </div>
               
@@ -117,7 +116,7 @@ export default function VendorProfilePage() {
                 <div style={{ background: "rgba(255, 255, 255, 0.05)", padding: "10px", borderRadius: "8px", color: "#f8fafc" }}><Mail size={20} /></div>
                 <div>
                   <div style={{ fontSize: "13px", color: "#64748b", marginBottom: "4px" }}>Email Address</div>
-                  <div style={{ fontSize: "15px", color: "#f8fafc", fontWeight: 500 }}>contact@{vendor.name.toLowerCase().replace(/\s+/g, '')}.com</div>
+                  <div style={{ fontSize: "15px", color: "#f8fafc", fontWeight: 500 }}>{vendor.email || "—"}</div>
                 </div>
               </div>
 
@@ -126,7 +125,7 @@ export default function VendorProfilePage() {
                 <div>
                   <div style={{ fontSize: "13px", color: "#64748b", marginBottom: "4px" }}>Registered Address</div>
                   <div style={{ fontSize: "15px", color: "#f8fafc", fontWeight: 500, lineHeight: 1.5 }}>
-                    123 Business Avenue, Suite 400<br/>Tech District, Metropolis 400001
+                    {vendor.address || "Not available"}
                   </div>
                 </div>
               </div>

@@ -5,6 +5,7 @@ export type Permission =
   | "vendors:manage"
   | "analytics:view"
   | "procurement:view"
+  | "activity:view"
   | "rfqs:create"
   | "rfqs:edit"
   | "vendors:assign"
@@ -27,7 +28,13 @@ export type Permission =
   | "invoices:view";
 
 export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
-  ADMIN: ["users:manage", "vendors:manage", "analytics:view", "procurement:view"],
+  ADMIN: [
+    "users:manage",
+    "vendors:manage",
+    "analytics:view",
+    "procurement:view",
+    "activity:view",
+  ],
   PROCUREMENT_OFFICER: [
     "rfqs:create",
     "rfqs:edit",
@@ -37,6 +44,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     "quotations:select",
     "purchaseOrders:generate",
     "invoices:generate",
+    "analytics:view",
+    "activity:view",
   ],
   APPROVER: [
     "approvals:view",
@@ -44,6 +53,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, readonly Permission[]> = {
     "approvals:reject",
     "approvals:remarks",
     "workflow:view",
+    "analytics:view",
+    "activity:view",
   ],
   VENDOR: [
     "rfqs:viewAssigned",

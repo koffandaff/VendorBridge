@@ -25,7 +25,7 @@ rfqRouter.post(
 rfqRouter.get(
   "/",
   authenticate,
-  requirePermission("rfqs:create", "procurement:view"),
+  requirePermission("rfqs:create", "procurement:view", "rfqs:viewAssigned"),
   validateRequest({ query: rfqQuerySchema }),
   controller.listRfqs
 );

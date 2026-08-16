@@ -36,10 +36,9 @@ const NAV_LINKS = [
 
 const ROLE_ACCESS: Record<string, string[]> = {
   "Procurement Officer": ["Dashboard", "RFQ's", "Quotations", "Purchase orders", "Invoices"],
-  "Vendor": ["Dashboard", "Quotations", "RFQ's", "Purchase orders"],
+  "Vendor": ["Dashboard", "Quotations", "RFQ's", "Purchase orders", "Invoices"],
   "Manager/Approver": ["Dashboard", "Approvals"],
   "Admin": ["Dashboard", "Vendors", "Reports", "Activity", "Approvals", "User Registration"],
-  "Dev": ["Dashboard", "Vendors", "RFQ's", "Quotations", "Approvals", "Purchase orders", "Invoices", "Reports", "Activity", "User Registration"]
 };
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
