@@ -3,57 +3,63 @@
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background-color: #121212;
-  color: #ffffff;
-  font-family: system-ui, -apple-system, sans-serif;
+  /* Premium dark gradient background */
+  background: radial-gradient(circle at 50% -20%, #1a2333 0%, #0f1115 60%);
+  color: #f8fafc;
+  font-family: inherit;
+  padding: 24px;
 }
 
 .card {
-  background-color: #1e1e1e;
-  padding: 40px;
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  /* Glassmorphism effect */
+  background: rgba(26, 32, 44, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 48px 40px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
 .avatar {
-  width: 80px;
-  height: 80px;
-  background-color: #333;
+  width: 72px;
+  height: 72px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   border-radius: 50%;
   margin-bottom: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
-}
-
-.avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.4);
 }
 
 .avatarPlaceholder {
-  color: #888;
-  font-size: 32px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .title {
-  font-size: 24px;
-  margin-bottom: 24px;
-  font-weight: 600;
+  font-size: 26px;
+  margin-bottom: 32px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  background: linear-gradient(to right, #fff, #94a3b8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .form {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
 }
 
 .inputGroup {
@@ -63,75 +69,95 @@
 }
 
 .inputGroup label {
-  font-size: 14px;
-  color: #ccc;
+  font-size: 13px;
+  font-weight: 500;
+  color: #94a3b8;
+  letter-spacing: 0.3px;
 }
 
 .inputGroup input {
-  padding: 12px;
-  border-radius: 6px;
-  border: 1px solid #333;
-  background-color: #2a2a2a;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: rgba(15, 17, 21, 0.6);
   color: #fff;
-  font-size: 16px;
+  font-size: 15px;
   outline: none;
-  transition: border-color 0.2s;
+  transition: all 0.2s ease;
+  font-family: inherit;
 }
 
 .inputGroup input:focus {
-  border-color: #007bff;
+  border-color: #10b981;
+  background-color: rgba(15, 17, 21, 0.8);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+}
+
+.inputGroup input::placeholder {
+  color: #475569;
 }
 
 .errorText {
-  color: #ff4d4f;
+  color: #ef4444;
   font-size: 12px;
-  margin-top: -4px;
+  margin-top: 2px;
+  font-weight: 500;
 }
 
 .forgotPassword {
   align-self: flex-end;
-  font-size: 14px;
-  color: #007bff;
+  font-size: 13px;
+  font-weight: 500;
+  color: #10b981;
   text-decoration: none;
   margin-top: -8px;
+  transition: color 0.2s;
 }
 
 .forgotPassword:hover {
-  text-decoration: underline;
+  color: #34d399;
 }
 
 .button {
-  background-color: #007bff;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
   border: none;
   padding: 14px;
-  border-radius: 6px;
+  border-radius: 12px;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
-  margin-top: 8px;
+  transition: all 0.2s ease;
+  margin-top: 12px;
   display: flex;
   justify-content: center;
   align-items: center;
+  box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.2);
 }
 
 .button:hover:not(:disabled) {
-  background-color: #0056b3;
+  transform: translateY(-1px);
+  box-shadow: 0 12px 20px -5px rgba(16, 185, 129, 0.3);
+}
+
+.button:active:not(:disabled) {
+  transform: translateY(1px);
 }
 
 .button:disabled {
-  background-color: #007bff80;
+  background: #334155;
+  box-shadow: none;
+  color: #64748b;
   cursor: not-allowed;
 }
 
 .loadingSpinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  width: 22px;
+  height: 22px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
   border-radius: 50%;
   border-top-color: #fff;
-  animation: spin 1s ease-in-out infinite;
+  animation: spin 0.8s ease-in-out infinite;
 }
 
 @keyframes spin {
