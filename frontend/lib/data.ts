@@ -51,6 +51,9 @@ export interface Vendor {
   category: string;
   gstNumber: string;
   contactNo: string;
+  contactPerson?: string;
+  email?: string;
+  address?: string;
   status: "Active" | "Pending" | "Blocked";
 }
 

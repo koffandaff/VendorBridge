@@ -13,7 +13,8 @@ import {
   Receipt, 
   BarChart3, 
   Activity,
-  Box
+  Box,
+  UserPlus
 } from "lucide-react";
 import styles from "./dashboard.module.css";
 import ProtectedRoute from "@/components/shared/ProtectedRoute";
@@ -30,11 +31,26 @@ const NAV_LINKS = [
   { name: "Invoices", href: "/invoices", icon: Receipt },
   { name: "Reports", href: "/reports", icon: BarChart3 },
   { name: "Activity", href: "/activity", icon: Activity },
+  { name: "User Registration", href: "/register", icon: UserPlus },
 ];
+
+const ROLE_ACCESS: Record<string, string[]> = {
+  "Procurement Officer": ["Dashboard", "RFQ's", "Quotations", "Purchase orders", "Invoices"],
+  "Vendor": ["Dashboard", "Quotations", "RFQ's", "Purchase orders"],
+  "Manager/Approver": ["Dashboard", "Approvals"],
+  "Admin": ["Dashboard", "Vendors", "Reports", "Activity", "Approvals", "User Registration"],
+  "Dev": ["Dashboard", "Vendors", "RFQ's", "Quotations", "Approvals", "Purchase orders", "Invoices", "Reports", "Activity", "User Registration"]
+};
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+
+  const allowedLinks = NAV_LINKS.filter(link => {
+    if (!user) return true;
+    const allowed = ROLE_ACCESS[user.role] || [];
+    return allowed.includes(link.name);
+  });
 
   return (
     <ProtectedRoute>
@@ -46,7 +62,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Box className={styles.logoIcon} style={{ display: 'none' }} size={24} />
           </div>
           <nav className={styles.nav}>
-            {NAV_LINKS.map((link) => {
+            {allowedLinks.map((link) => {
               const Icon = link.icon;
               const isActive = pathname === link.href || pathname?.startsWith(link.href + '/');
               return (
@@ -68,9 +84,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {/* Top Bar */}
           <header className={styles.topBar}>
             {user && (
-              <div className={styles.userInfo}>
-                <span className={styles.userName}>{user.username}</span>
-                <span className={styles.userRole}>{user.role}</span>
+              <div className={styles.userInfo} style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span className={styles.userName}>{user.username}</span>
+                  <span className={styles.userRole}>{user.role}</span>
+                </div>
+                <button 
+                  onClick={() => logout()} 
+                  style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#f87171', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}
+                >
+                  Logout
+                </button>
               </div>
             )}
             <div className={styles.windowControls}>

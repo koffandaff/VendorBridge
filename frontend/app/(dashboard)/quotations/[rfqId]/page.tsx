@@ -142,20 +142,20 @@ export default function SubmitQuotationPage() {
         <div className={styles.headerLeft}>
           <h1 className={styles.title}>Submit Quotations</h1>
           <p className={styles.subtitle}>
-            RFQ: {rfq.title} &mdash; Deadline {rfq.deadline}
+            RFQ: {rfq.title} &mdash; deadline {rfq.deadline}
           </p>
         </div>
-        <button 
-          className={styles.backButton} 
-          onClick={() => router.back()}
-        >
-          <ArrowLeft size={16} />
-          <span>Back</span>
-        </button>
+      </div>
+
+      <div style={{ padding: "16px", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", background: "rgba(255,255,255,0.02)", marginBottom: "24px" }}>
+        <div style={{ fontSize: "12px", color: "#94a3b8", marginBottom: "4px" }}>RFQ Summary</div>
+        <div style={{ fontSize: "14px", color: "#e2e8f0" }}>
+          {rfq.items.map(i => `${i.item} * ${i.qty}`).join(", ")} - category {rfq.category}
+        </div>
       </div>
 
       <div className={styles.card}>
-        <h2 className={styles.cardTitle}>Line Items & Pricing</h2>
+        <h2 className={styles.cardTitle} style={{ fontSize: "14px", fontWeight: 400, color: "#e2e8f0" }}>Your Quotation</h2>
         
         <form id="quoteForm">
           <div className={styles.tableContainer}>
@@ -163,11 +163,10 @@ export default function SubmitQuotationPage() {
               <thead>
                 <tr>
                   <th>Item</th>
-                  <th>Category</th>
                   <th>Qty</th>
-                  <th style={{ width: "200px" }}>Unit Price ($)</th>
-                  <th style={{ width: "150px" }}>Delivery (Days)</th>
-                  <th style={{ textAlign: "right" }}>Total</th>
+                  <th style={{ width: "200px" }}>Unit price</th>
+                  <th style={{ width: "150px" }}>Total</th>
+                  <th style={{ width: "150px", textAlign: "right" }}>Delivery (days)</th>
                 </tr>
               </thead>
               <tbody>
@@ -179,22 +178,16 @@ export default function SubmitQuotationPage() {
                   return (
                     <tr key={field.id}>
                       <td>
-                        <div style={{ fontWeight: 600 }}>{rfqItem?.item}</div>
+                        <div style={{ fontWeight: 600, color: "#e2e8f0" }}>{rfqItem?.item}</div>
                       </td>
-                      <td>
-                        <span style={{ fontSize: "12px", color: "#64748b", background: "rgba(255,255,255,0.05)", padding: "4px 8px", borderRadius: "4px" }}>
-                          {rfqItem?.category}
-                        </span>
-                      </td>
-                      <td>{rfqItem?.qty}</td>
+                      <td style={{ color: "#cbd5e1" }}>{rfqItem?.qty}</td>
                       <td>
                         <div className={styles.inputWrapper}>
-                          <span className={styles.currencySymbol}>$</span>
                           <input 
                             type="number" 
                             step="0.01"
-                            className={`${styles.formInput} ${styles.inputWithSymbol} ${errors.items?.[index]?.unitPrice ? styles.error : ""}`}
-                            placeholder="0.00"
+                            className={`${styles.formInput} ${errors.items?.[index]?.unitPrice ? styles.error : ""}`}
+                            placeholder="0"
                             {...register(`items.${index}.unitPrice`)}
                           />
                         </div>
@@ -202,19 +195,20 @@ export default function SubmitQuotationPage() {
                           <span className={styles.formError}>{errors.items[index]?.unitPrice?.message}</span>
                         )}
                       </td>
-                      <td>
+                      <td style={{ fontWeight: 600, color: "#e2e8f0" }}>
+                        {rowTotal.toLocaleString()}
+                      </td>
+                      <td style={{ textAlign: "right" }}>
                         <input 
                           type="number" 
                           className={`${styles.formInput} ${errors.items?.[index]?.deliveryDays ? styles.error : ""}`}
                           placeholder="e.g. 14"
+                          style={{ textAlign: "right", width: "100px", float: "right" }}
                           {...register(`items.${index}.deliveryDays`)}
                         />
                         {errors.items?.[index]?.deliveryDays && (
                           <span className={styles.formError}>{errors.items[index]?.deliveryDays?.message}</span>
                         )}
-                      </td>
-                      <td style={{ textAlign: "right", fontWeight: 600, color: "#e2e8f0" }}>
-                        ${rowTotal.toFixed(2)}
                       </td>
                     </tr>
                   );
@@ -226,24 +220,24 @@ export default function SubmitQuotationPage() {
           <div className={styles.summarySection}>
             <div className={styles.termsGroup}>
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                <label style={{ fontSize: "14px", fontWeight: 500, color: "#94a3b8" }}>Tax / GST (%)</label>
-                <div className={styles.inputWrapper} style={{ maxWidth: "200px" }}>
+                <label style={{ fontSize: "14px", fontWeight: 500, color: "#94a3b8" }}>tax / GST %</label>
+                <div className={styles.inputWrapper} style={{ maxWidth: "150px" }}>
                   <input 
                     type="number"
                     step="0.1"
                     className={`${styles.formInput} ${errors.taxPercentage ? styles.error : ""}`}
                     {...register("taxPercentage")}
                   />
-                  <span style={{ position: "absolute", right: "16px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}>%</span>
+                  <span style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }}>%</span>
                 </div>
                 {errors.taxPercentage && <span className={styles.formError}>{errors.taxPercentage.message}</span>}
               </div>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "16px" }}>
-                <label style={{ fontSize: "14px", fontWeight: 500, color: "#94a3b8" }}>Notes & Terms</label>
+                <label style={{ fontSize: "14px", fontWeight: 500, color: "#94a3b8" }}>Note / terms</label>
                 <textarea 
                   className={styles.formTextarea}
-                  placeholder="Payment terms, delivery conditions, warranties, etc."
+                  placeholder="Payment terms: 20 days net..."
                   {...register("notes")}
                 />
               </div>
@@ -252,20 +246,29 @@ export default function SubmitQuotationPage() {
             <div className={styles.summaryBox}>
               <div className={styles.summaryRow}>
                 <span>Subtotal</span>
-                <span className={styles.summaryValue}>${subtotal.toFixed(2)}</span>
+                <span className={styles.summaryValue}>{subtotal.toLocaleString()}</span>
               </div>
               <div className={styles.summaryRow}>
-                <span>Estimated Tax ({watchTax}%)</span>
-                <span className={styles.summaryValue}>${gstAmount.toFixed(2)}</span>
+                <span>GST ({watchTax}%)</span>
+                <span className={styles.summaryValue}>{gstAmount.toLocaleString()}</span>
               </div>
               <div className={styles.grandTotalRow}>
-                <span>Grand Total</span>
-                <span>${grandTotal.toFixed(2)}</span>
+                <span>Grand total</span>
+                <span>{grandTotal.toLocaleString()}</span>
               </div>
             </div>
           </div>
           
-          <div className={styles.actionsRow}>
+          <div className={styles.actionsRow} style={{ justifyContent: "flex-start", gap: "16px" }}>
+            <button 
+              type="button"
+              className={styles.submitButton} 
+              style={{ background: "transparent", border: "1px solid #e2e8f0", color: "#e2e8f0" }}
+              onClick={handleSubmit((data: any) => onSubmit(data, false))}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Submitting..." : "Submit Quotation"}
+            </button>
             <button 
               type="button"
               className={styles.saveDraftButton}
@@ -273,14 +276,6 @@ export default function SubmitQuotationPage() {
               disabled={isSubmitting}
             >
               Save Draft
-            </button>
-            <button 
-              type="button"
-              className={styles.submitButton} 
-              onClick={handleSubmit((data: any) => onSubmit(data, false))}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Submitting..." : "Submit Quotation"}
             </button>
           </div>
         </form>

@@ -1,9 +1,10 @@
 .layout {
   display: flex;
-  height: 100vh;
-  width: 100vw;
+  height: 125vh;
+  width: 125vw;
   overflow: hidden;
-  /* background-color removed, relying on globals.css */
+  transform: scale(0.8);
+  transform-origin: top left;
 }
 
 /* Sidebar styles */
