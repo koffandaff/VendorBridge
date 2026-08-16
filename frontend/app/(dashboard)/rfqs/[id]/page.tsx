@@ -5,10 +5,14 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Send, XCircle } from "lucide-react";
 import { fetchRFQById, updateRfqStatus, RFQ } from "@/lib/data";
 import toast from "react-hot-toast";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function RFQViewPage() {
   const router = useRouter();
   const params = useParams();
+  const { user } = useAuth();
+  const isProcurementStaff =
+    user?.role === "Admin" || user?.role === "Procurement Officer";
   const rfqId = params.id as string;
 
   const [rfq, setRfq] = useState<RFQ | null>(null);
@@ -94,7 +98,7 @@ export default function RFQViewPage() {
           <p style={{ fontSize: "16px", color: "#94a3b8" }}>{rfq.number} &mdash; Deadline: {rfq.deadline}</p>
         </div>
         <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-          {rfq.rawStatus === "DRAFT" && (
+          {isProcurementStaff && rfq.rawStatus === "DRAFT" && (
             <button
               onClick={handleOpen}
               style={{ background: "linear-gradient(135deg, #10b981, #059669)", border: "none", color: "#fff", padding: "10px 16px", borderRadius: "10px", fontSize: "14px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}
@@ -103,7 +107,7 @@ export default function RFQViewPage() {
               <span>Open RFQ</span>
             </button>
           )}
-          {rfq.rawStatus === "OPEN" && (
+          {isProcurementStaff && rfq.rawStatus === "OPEN" && (
             <button
               onClick={handleClose}
               style={{ background: "transparent", border: "1px solid rgba(239, 68, 68, 0.4)", color: "#ef4444", padding: "10px 16px", borderRadius: "10px", fontSize: "14px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "8px" }}

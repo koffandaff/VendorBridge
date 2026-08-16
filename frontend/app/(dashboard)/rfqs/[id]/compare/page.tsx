@@ -7,10 +7,14 @@ import { fetchRFQById, fetchQuotations, selectQuotation, createPurchaseOrder, RF
 import { addDays, formatCurrency, toIsoDate } from "@/lib/format";
 import styles from "./compare.module.css";
 import { showLoading, showModalSuccess, showToastError, closeAlert } from "@/lib/alerts";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function CompareQuotesPage() {
   const router = useRouter();
   const params = useParams();
+  const { user } = useAuth();
+  const isProcurementStaff =
+    user?.role === "Admin" || user?.role === "Procurement Officer";
   const rfqId = params.id as string;
 
   const [rfq, setRfq] = useState<RFQ | null>(null);
@@ -171,7 +175,7 @@ export default function CompareQuotesPage() {
                   <div className={`${styles.cell} ${styles.actionCell}`}>
                     {quote.rawStatus === "REJECTED" || quote.rawStatus === "EXPIRED" ? (
                       <span style={{ color: "#ef4444", fontSize: "12px", fontWeight: 600 }}>Rejected</span>
-                    ) : isSelected ? (
+                    ) : isProcurementStaff && isSelected ? (
                       <button
                         className={styles.sendButton}
                         onClick={handleGeneratePO}
@@ -185,7 +189,7 @@ export default function CompareQuotesPage() {
                         <button className={styles.viewButton} onClick={() => router.push(`/quotations/review/${quote.id}`)}>
                           <Eye size={14} /> View
                         </button>
-                        {!selectedQuote && (
+                        {!selectedQuote && (isProcurementStaff || user?.role === "Manager/Approver") && (
                           <button
                             className={styles.sendButton}
                             onClick={() => handleSelect(quote)}

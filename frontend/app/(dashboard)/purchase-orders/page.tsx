@@ -247,7 +247,7 @@ export default function PurchaseOrdersPage() {
                           >
                             View Invoice
                           </button>
-                        ) : (
+                        ) : (isOfficer || user?.role === "Admin") && (
                           <button
                             className={styles.viewButton}
                             style={{ borderColor: "rgba(16,185,129,0.3)", color: "#10b981" }}
