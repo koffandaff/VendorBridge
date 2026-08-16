@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import styles from "./login.module.css";
 import { useAuth } from "@/lib/AuthContext";
 import { ApiError } from "@/lib/api";
@@ -112,6 +113,10 @@ export default function LoginPage() {
             />
             {errors.password && <span className={styles.errorText}>{errors.password}</span>}
           </div>
+
+          <Link href="/forgot-password" className={styles.forgotPassword}>
+            Forgot password?
+          </Link>
 
           {errors.form && <span className={styles.errorText}>{errors.form}</span>}
 
