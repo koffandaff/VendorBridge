@@ -54,6 +54,9 @@ async function deliver(message: EmailMessage): Promise<void> {
 }
 
 export function sendOtpCode(to: string, code: string): Promise<void> {
+  if (env.NODE_ENV !== "production") {
+    logger.info("verification code for user", { to, code });
+  }
   return deliver({
     to,
     subject: "VendorBridge verification code",
@@ -68,6 +71,9 @@ export function sendOtpCode(to: string, code: string): Promise<void> {
 }
 
 export function sendInviteEmail(to: string, name: string, code: string): Promise<void> {
+  if (env.NODE_ENV !== "production") {
+    logger.info("invitation code for user", { to, code });
+  }
   return deliver({
     to,
     subject: "You have been invited to VendorBridge",
@@ -80,7 +86,11 @@ export function sendInviteEmail(to: string, name: string, code: string): Promise
       "",
       code,
       "",
-      `This code expires in ${env.OTP_EXPIRES_MINUTES} minutes. If you were not expecting this, you can ignore this email.`,
+      `This code expires in ${env.OTP_EXPIRES_MINUTES} minutes.`,
+      "",
+      `Open ${env.CLIENT_URL}/accept-invite and enter your email address and the code above to choose a password and sign in.`,
+      "",
+      "If you were not expecting this, you can ignore this email.",
     ].join("\n"),
   });
 }
