@@ -1,4 +1,3 @@
-
 # VendorBridge Database Schema & Implementation Guide
 
 ## 1. Document Purpose
@@ -399,7 +398,7 @@ Stores every person who can access VendorBridge.
 | `createdAt`     | DateTime |      Yes | Creation timestamp                   |
 | `updatedAt`     | DateTime |      Yes | Last update                          |
 
-### Roles
+### Roles 
 
 ```text
 ADMIN
