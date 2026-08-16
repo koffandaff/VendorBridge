@@ -1,6 +1,6 @@
 import type { QuotationStatus } from "@prisma/client";
 import { QuotationRepository } from "./quotation.repository.js";
-import { ConflictError, NotFoundError } from "../../core/errors/AppError.js";
+import { ConflictError, NotFoundError } from "../../core/errors/app-error.js";
 import type { PaginationMeta } from "../../core/http/response.js";
 import type { QuotationQueryFilters } from "./quotation.types.js";
 

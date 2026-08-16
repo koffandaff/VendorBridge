@@ -1,5 +1,5 @@
 import { Prisma, type PurchaseOrderStatus } from "@prisma/client";
-import { prisma } from "../../lib/prisma.js";
+import { prisma } from "../../shared/prisma.js";
 import type { PurchaseOrderQueryFilters } from "./purchase-order.types.js";
 
 export interface PurchaseOrderItemDraft {

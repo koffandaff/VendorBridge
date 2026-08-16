@@ -4,14 +4,56 @@
 
 - **Base URL (development)**: `http://localhost:4000`
 - Content type: `application/json`
+- All business endpoints are prefixed with `/api/v1` (see `backend/src/config/constants.ts`).
 
-## Endpoints
+## Response envelope
 
-### System
+Every endpoint (except `/health`) responds with one of two shapes:
 
-| Method | Path      | Description                                |
-| ------ | --------- | ------------------------------------------ |
-| `GET`  | `/health` | Liveness check. Returns `{"status":"ok"}`. |
+```jsonc
+// success
+{ "success": true, "data": { /* resource */ } }
+
+// error
+{ "success": false, "error": { "code": "VALIDATION_ERROR", "message": "invalid request body", "details": [] } }
+```
+
+Error codes: `VALIDATION_ERROR` (400), `AUTHENTICATION_ERROR` (401), `AUTHORIZATION_ERROR` (403),
+`NOT_FOUND` (404), `CONFLICT` (409), `PAYLOAD_TOO_LARGE` (413), `RATE_LIMIT_EXCEEDED` (429),
+`DATABASE_ERROR` (500), `INTERNAL_SERVER_ERROR` (500), `EXTERNAL_SERVICE_ERROR` (502).
+
+Every response includes the `x-request-id` header for tracing.
+
+## Health
+
+| Method | Path      | Description                                                        |
+| ------ | --------- | ------------------------------------------------------------------ |
+| `GET`  | `/health` | Liveness + dependency check. `{"status":"ok","database":"up"}`.    |
+
+## Authentication — `/api/v1/auth`
+
+Full documentation (flows, token/OTP design, security notes, env vars, demo accounts):
+**[auth.md](auth.md)**
+
+| Method | Path             | Auth          | Description                                             |
+| ------ | ---------------- | ------------- | ------------------------------------------------------- |
+| `POST` | `/auth/login`    | –             | Login with email/password, returns tokens               |
+| `POST` | `/auth/register` | ADMIN (`users:manage`) | Create a user + send OTP invite email          |
+| `POST` | `/auth/refresh`  | –             | Rotate an opaque refresh token for a new token pair     |
+| `POST` | `/auth/logout`   | Bearer        | Revoke a refresh session                                |
+| `GET`  | `/auth/me`       | Bearer        | Current user profile                                    |
+| `POST` | `/auth/change-password` | Bearer | Change password (revokes all sessions)              |
+| `POST` | `/auth/forgot-password` | –      | Request a verification code by email                    |
+| `POST` | `/auth/verify-otp` | –           | Verify a 6-digit code (single use)                      |
+| `POST` | `/auth/reset-password` | –       | Set a new password with a verified code                 |
+
+### Auth conventions (contract)
+
+- Access token: `Authorization: Bearer <jwt>` (15 min default, HS256, payload `{ sub, role }`).
+- Refresh token: opaque 256-bit token, sent in the request body (e.g. login/refresh responses),
+  never stored plain — only its sha256 hash exists in `Session.token`.
+- Headers/interceptors must refresh before the access token expires: call
+  `POST /auth/refresh` with the current refresh token and replace both tokens on success.
 
 ### Vendor Categories (`/api/v1/vendors/categories`)
 
@@ -46,6 +88,9 @@
 
 ### RFQs (`/api/v1/rfqs`)
 
+All procurement endpoints require `Authorization: Bearer <access-token>`.
+Permissions per route: create/edit `rfqs:create`/`rfqs:edit`, list `rfqs:create` (officer) / `procurement:view` (admin), details also `rfqs:viewDetails` (vendor).
+
 | Method   | Path                | Description                                                            |
 | -------- | ------------------- | ---------------------------------------------------------------------- |
 | `POST`   | `/api/v1/rfqs`      | Create an RFQ (DRAFT) with items and invited vendors; number auto-generated (`RFQ-YYYY-0001`) |
@@ -55,6 +100,8 @@
 | `PATCH`  | `/api/v1/rfqs/:id/status` | Transition status (DRAFT→OPEN/CANCELLED, OPEN→CLOSED/CANCELLED)  |
 
 ### Quotations (`/api/v1/quotations`)
+
+Permissions: view `quotations:view`, compare `quotations:compare`, select/reject `quotations:select`.
 
 | Method   | Path                          | Description                                                    |
 | -------- | ----------------------------- | -------------------------------------------------------------- |
@@ -66,6 +113,8 @@
 
 ### Purchase Orders (`/api/v1/purchase-orders`)
 
+Permissions: generate/transition `purchaseOrders:generate`, view `purchaseOrders:generate` or `purchaseOrders:view`.
+
 | Method   | Path                          | Description                                                    |
 | -------- | ----------------------------- | -------------------------------------------------------------- |
 | `POST`   | `/api/v1/purchase-orders`     | Generate a PO from a SELECTED quotation (APPROVED, number auto-generated `PO-YYYY-0001`) |
@@ -74,6 +123,8 @@
 | `PATCH`  | `/api/v1/purchase-orders/:id/status` | Transition PO status (APPROVED→SENT→ACKNOWLEDGED→PARTIALLY_RECEIVED→COMPLETED, →CANCELLED) |
 
 ### Invoices (`/api/v1/invoices`)
+
+Permissions: generate/transition `invoices:generate`, view `invoices:generate` or `invoices:view`.
 
 | Method   | Path                     | Description                                                    |
 | -------- | ------------------------ | -------------------------------------------------------------- |
@@ -86,5 +137,7 @@
 
 - Each feature owns its routes: `backend/src/modules/<feature>/<feature>.routes.ts`.
 - Route handlers are thin: parsing -> validation -> controller/service -> response.
-- Centralized errors handled through `backend/src/core/errors/AppError.ts` and `backend/src/core/middleware/error.middleware.ts`.
+- Auth/RBAC: `backend/src/core/auth/guards.ts` and `backend/src/core/rbac/guards.ts`.
+- Centralized errors handled through `backend/src/core/errors/AppError.ts` and the centralized error middleware (`backend/src/core/errors/error.middleware.ts` / `backend/src/core/middleware/error.middleware.ts`).
 - Standard API response structure defined in `backend/src/core/http/response.ts`.
+- Endpoint documentation is kept in sync with this file as features land.

@@ -21,7 +21,8 @@ export class PurchaseOrderController {
   createPurchaseOrder = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const purchaseOrder = await this.service.createPurchaseOrder(
-        req.body as CreatePurchaseOrderInput
+        req.body as CreatePurchaseOrderInput,
+        req.user!.id
       );
       sendCreated(res, purchaseOrder, "Purchase order generated successfully");
     } catch (error) {

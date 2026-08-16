@@ -3,7 +3,6 @@ import { PurchaseOrderStatus } from "@prisma/client";
 
 export const createPurchaseOrderSchema = z.object({
   quotationId: z.string().uuid("Invalid quotation ID format"),
-  createdById: z.string().uuid("Invalid user ID format"),
   orderDate: z.coerce.date("Invalid order date").optional(),
   expectedDeliveryDate: z.coerce.date("Invalid expected delivery date"),
   notes: z.string().trim().max(1000).nullish(),

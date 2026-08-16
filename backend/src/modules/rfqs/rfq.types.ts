@@ -14,7 +14,6 @@ export interface CreateRfqInput {
   title: string;
   description: string;
   deadline: Date;
-  createdById: string;
   items: CreateRfqItemInput[];
   invitedVendorIds?: string[];
 }

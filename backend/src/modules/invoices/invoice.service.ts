@@ -1,10 +1,9 @@
 import { Prisma, type InvoiceStatus } from "@prisma/client";
 import { InvoiceRepository } from "./invoice.repository.js";
 import {
-  BadRequestError,
   ConflictError,
   NotFoundError,
-} from "../../core/errors/AppError.js";
+} from "../../core/errors/app-error.js";
 import {
   buildYearPrefix,
   generateSequentialNumber,
@@ -41,7 +40,7 @@ export class InvoiceService {
     }
 
     if (purchaseOrder.status === "CANCELLED") {
-      throw new BadRequestError("Cannot generate an invoice for a cancelled purchase order");
+      throw new ConflictError("Cannot generate an invoice for a cancelled purchase order");
     }
 
     const existing = await this.repository.findInvoiceByPoId(input.purchaseOrderId);

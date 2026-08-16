@@ -1,5 +1,5 @@
 import { Prisma, type InvoiceStatus } from "@prisma/client";
-import { prisma } from "../../lib/prisma.js";
+import { prisma } from "../../shared/prisma.js";
 import type { InvoiceQueryFilters } from "./invoice.types.js";
 
 export interface InvoiceItemDraft {

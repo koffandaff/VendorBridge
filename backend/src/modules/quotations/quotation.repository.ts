@@ -1,5 +1,5 @@
 import { Prisma, type QuotationStatus } from "@prisma/client";
-import { prisma } from "../../lib/prisma.js";
+import { prisma } from "../../shared/prisma.js";
 import type { QuotationQueryFilters } from "./quotation.types.js";
 
 const quotationListInclude = {

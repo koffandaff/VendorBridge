@@ -1,10 +1,9 @@
 import type { RFQStatus } from "@prisma/client";
 import { RfqRepository } from "./rfq.repository.js";
 import {
-  BadRequestError,
   ConflictError,
   NotFoundError,
-} from "../../core/errors/AppError.js";
+} from "../../core/errors/app-error.js";
 import {
   buildYearPrefix,
   generateSequentialNumber,
@@ -31,7 +30,7 @@ const RFQ_TRANSITIONS: Record<RFQStatus, RFQStatus[]> = {
 export class RfqService {
   constructor(private readonly repository: RfqRepository = new RfqRepository()) {}
 
-  async createRfq(input: CreateRfqInput) {
+  async createRfq(input: CreateRfqInput, createdById: string) {
     const invitedVendorIds = await this.validateInvitedVendors(input.invitedVendorIds);
 
     const rfqNumber = await generateSequentialNumber(
@@ -44,7 +43,7 @@ export class RfqService {
         title: input.title,
         description: input.description,
         deadline: input.deadline,
-        createdById: input.createdById,
+        createdById,
         rfqNumber,
       },
       input.items,
@@ -121,7 +120,7 @@ export class RfqService {
     if (found.length !== uniqueIds.length) {
       const foundIds = new Set(found.map((vendor) => vendor.id));
       const missingIds = uniqueIds.filter((id) => !foundIds.has(id));
-      throw new BadRequestError(
+      throw new NotFoundError(
         `The following vendor IDs do not exist: ${missingIds.join(", ")}`
       );
     }

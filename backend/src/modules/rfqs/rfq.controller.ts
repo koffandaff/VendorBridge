@@ -21,7 +21,10 @@ export class RfqController {
 
   createRfq = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const rfq = await this.service.createRfq(req.body as CreateRfqInput);
+      const rfq = await this.service.createRfq(
+        req.body as CreateRfqInput,
+        req.user!.id
+      );
       sendCreated(res, rfq, "RFQ created successfully");
     } catch (error) {
       next(error);

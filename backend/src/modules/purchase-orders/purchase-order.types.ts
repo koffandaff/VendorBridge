@@ -2,7 +2,6 @@ import type { PurchaseOrderStatus } from "@prisma/client";
 
 export interface CreatePurchaseOrderInput {
   quotationId: string;
-  createdById: string;
   orderDate?: Date;
   expectedDeliveryDate: Date;
   notes?: string | null;

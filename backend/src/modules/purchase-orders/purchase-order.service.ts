@@ -1,10 +1,9 @@
 import { Prisma, type PurchaseOrderStatus } from "@prisma/client";
 import { PurchaseOrderRepository } from "./purchase-order.repository.js";
 import {
-  BadRequestError,
   ConflictError,
   NotFoundError,
-} from "../../core/errors/AppError.js";
+} from "../../core/errors/app-error.js";
 import {
   buildYearPrefix,
   generateSequentialNumber,
@@ -38,14 +37,14 @@ export class PurchaseOrderService {
    * Copies quotation items, recalculates all amounts server-side, and creates
    * the PO in APPROVED status within a single transaction.
    */
-  async createPurchaseOrder(input: CreatePurchaseOrderInput) {
+  async createPurchaseOrder(input: CreatePurchaseOrderInput, createdById: string) {
     const quotation = await this.repository.findQuotationForPo(input.quotationId);
     if (!quotation) {
       throw new NotFoundError("Quotation not found");
     }
 
     if (quotation.status !== "SELECTED") {
-      throw new BadRequestError(
+      throw new ConflictError(
         `Only a SELECTED quotation can generate a purchase order (current: '${quotation.status}')`
       );
     }
@@ -81,7 +80,7 @@ export class PurchaseOrderService {
         poNumber,
         quotationId: quotation.id,
         vendorId: quotation.vendorId,
-        createdById: input.createdById,
+        createdById,
         orderDate: input.orderDate ?? new Date(),
         expectedDeliveryDate: input.expectedDeliveryDate,
         subtotal: docTotals.subtotal,

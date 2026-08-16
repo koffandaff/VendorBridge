@@ -15,7 +15,6 @@ export const createRfqSchema = z.object({
   title: z.string().trim().min(3, "Title must be at least 3 characters").max(200),
   description: z.string().trim().min(3, "Description must be at least 3 characters").max(2000),
   deadline: z.coerce.date("Invalid deadline"),
-  createdById: z.string().uuid("Invalid user ID format"),
   items: z.array(rfqItemSchema).min(1, "At least one item is required").max(100),
   invitedVendorIds: z
     .array(z.string().uuid("Invalid vendor ID format"))
