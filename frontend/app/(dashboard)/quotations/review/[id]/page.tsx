@@ -5,11 +5,19 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, FileCheck, XCircle, FileText } from "lucide-react";
 import { fetchQuotationById, rejectQuotation, selectQuotation, Quotation } from "@/lib/data";
 import { formatCurrency } from "@/lib/format";
-import toast from "react-hot-toast";
+import { showLoading, showModalSuccess, showToastError, closeAlert } from "@/lib/alerts";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function QuotationReviewPage() {
   const router = useRouter();
   const params = useParams();
+  const { user } = useAuth();
+  const canDecide =
+    user?.role === "Admin" ||
+    user?.role === "Procurement Officer" ||
+    user?.role === "Manager/Approver";
+  const canGeneratePo =
+    user?.role === "Admin" || user?.role === "Procurement Officer";
   const quoteId = params.id as string;
 
   const [quote, setQuote] = useState<Quotation | null>(null);
@@ -36,12 +44,15 @@ export default function QuotationReviewPage() {
 
   const handleAccept = async () => {
     setActionLoading(true);
+    showLoading("Accepting quotation...");
     try {
       await selectQuotation(quoteId);
-      toast.success("Quotation accepted!");
+      closeAlert();
+      await showModalSuccess("Quotation accepted!");
       await loadQuote();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to accept quotation");
+      closeAlert();
+      showToastError(error instanceof Error ? error.message : "Failed to accept quotation");
     } finally {
       setActionLoading(false);
     }
@@ -49,12 +60,15 @@ export default function QuotationReviewPage() {
 
   const handleReject = async () => {
     setActionLoading(true);
+    showLoading("Rejecting quotation...");
     try {
       await rejectQuotation(quoteId);
-      toast.error("Quotation rejected.");
+      closeAlert();
+      showToastError("Quotation rejected."); // Using toast error for rejection might be okay, or showModalError. Let's use showModalSuccess with a title or just showToastError like original toast.error
       await loadQuote();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to reject quotation");
+      closeAlert();
+      showToastError(error instanceof Error ? error.message : "Failed to reject quotation");
     } finally {
       setActionLoading(false);
     }
@@ -149,7 +163,7 @@ export default function QuotationReviewPage() {
         <div style={{ background: "rgba(30, 41, 59, 0.4)", backdropFilter: "blur(12px)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "20px", padding: "32px", display: "flex", flexDirection: "column", gap: "24px" }}>
           <h2 style={{ fontSize: "18px", fontWeight: 700, color: "#f8fafc", borderBottom: "1px solid rgba(255, 255, 255, 0.05)", paddingBottom: "16px" }}>Actions</h2>
 
-          {quote.rawStatus === "SELECTED" ? (
+          {canGeneratePo && quote.rawStatus === "SELECTED" ? (
             <>
               <p style={{ color: "#94a3b8", fontSize: "14px" }}>This quotation has been accepted. You can now generate a purchase order.</p>
               <button
@@ -162,7 +176,7 @@ export default function QuotationReviewPage() {
             </>
           ) : quote.rawStatus === "REJECTED" || quote.rawStatus === "EXPIRED" ? (
             <p style={{ color: "#f87171", fontSize: "14px" }}>This quotation has been {quote.rawStatus === "EXPIRED" ? "expired" : "rejected"}.</p>
-          ) : (
+          ) : canDecide ? (
             <>
               <p style={{ color: "#94a3b8", fontSize: "14px" }}>Review this bid and make a decision to either approve or reject the quotation.</p>
 
@@ -184,7 +198,7 @@ export default function QuotationReviewPage() {
                 Reject Quotation
               </button>
             </>
-          )}
+          ) : null}
         </div>
       </div>
     </div>

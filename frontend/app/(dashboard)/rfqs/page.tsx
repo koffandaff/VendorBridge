@@ -7,6 +7,7 @@ import styles from "./rfqs-list.module.css";
 import { fetchRFQs, updateRfqStatus, RFQ, RFQStatus } from "@/lib/data";
 import { showLoading, showModalSuccess, showToastError, closeAlert } from "@/lib/alerts";
 import { PageSkeleton, ToolbarSkeleton, TableSkeleton } from "@/components/ui/Skeleton";
+import { useAuth } from "@/lib/AuthContext";
 
 type FilterTab = "All" | "Draft" | "Sent" | "Quotes Received" | "Closed";
 
@@ -14,6 +15,9 @@ const TABS: FilterTab[] = ["All", "Draft", "Sent", "Quotes Received", "Closed"];
 
 export default function RFQListPage() {
   const router = useRouter();
+  const { user } = useAuth();
+  const isProcurementStaff =
+    user?.role === "Admin" || user?.role === "Procurement Officer";
   const [rfqs, setRfqs] = useState<RFQ[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -170,7 +174,7 @@ export default function RFQListPage() {
                         <button className={styles.viewButton} onClick={() => router.push(`/rfqs/${rfq.id}`)}>
                           <Eye size={14} /> View
                         </button>
-                        {rfq.rawStatus === "DRAFT" && (
+                        {isProcurementStaff && rfq.rawStatus === "DRAFT" && (
                           <button
                             className={`${styles.viewButton} ${styles.openButton}`}
                             onClick={() => handleOpen(rfq)}
@@ -178,7 +182,7 @@ export default function RFQListPage() {
                             <Send size={14} /> Open
                           </button>
                         )}
-                        {rfq.rawStatus === "OPEN" && (
+                        {isProcurementStaff && rfq.rawStatus === "OPEN" && (
                           <button
                             className={`${styles.viewButton} ${styles.closeButton}`}
                             onClick={() => handleClose(rfq)}
