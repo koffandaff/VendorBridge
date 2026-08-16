@@ -15,10 +15,18 @@ export function validateRequest(schemas: RequestValidationSchemas) {
         req.body = schemas.body.parse(req.body);
       }
       if (schemas.query) {
-        req.query = schemas.query.parse(req.query) as typeof req.query;
+        const parsedQuery = schemas.query.parse(req.query) as Record<string, unknown>;
+        for (const key of Object.keys(req.query)) {
+          delete (req.query as Record<string, unknown>)[key];
+        }
+        Object.assign(req.query, parsedQuery);
       }
       if (schemas.params) {
-        req.params = schemas.params.parse(req.params) as typeof req.params;
+        const parsedParams = schemas.params.parse(req.params) as Record<string, unknown>;
+        for (const key of Object.keys(req.params)) {
+          delete (req.params as Record<string, unknown>)[key];
+        }
+        Object.assign(req.params, parsedParams);
       }
       next();
     } catch (error) {
