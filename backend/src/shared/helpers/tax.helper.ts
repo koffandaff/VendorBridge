@@ -1,9 +1,11 @@
 import { Prisma } from "@prisma/client";
 
+export type DecimalValue = number | string | Prisma.Decimal;
+
 export interface ItemCalculationInput {
-  quantity: number | Prisma.Decimal;
-  unitPrice: number | Prisma.Decimal;
-  taxRate?: number | Prisma.Decimal | null; // GST Rate in % (e.g. 18 for 18%)
+  quantity: DecimalValue;
+  unitPrice: DecimalValue;
+  taxRate?: DecimalValue | null; // GST Rate in % (e.g. 18 for 18%)
 }
 
 export interface LineItemTotals {
@@ -21,16 +23,24 @@ export interface DocumentTotals {
   totalAmount: Prisma.Decimal;
 }
 
+function toDecimal(val: DecimalValue | null | undefined): Prisma.Decimal {
+  if (val === null || val === undefined) {
+    return new Prisma.Decimal(0);
+  }
+  if (val instanceof Prisma.Decimal) {
+    return val;
+  }
+  return new Prisma.Decimal(val.toString());
+}
+
 /**
  * Calculates item subtotal, auto-calculates GST tax amount based on taxRate %, and total amount.
  * Source of Truth per docs/Schema.md §36 (Calculation Rules).
  */
 export function calculateLineTotals(input: ItemCalculationInput): LineItemTotals {
-  const qty = new Prisma.Decimal(input.quantity.toString());
-  const price = new Prisma.Decimal(input.unitPrice.toString());
-  const rate = input.taxRate !== undefined && input.taxRate !== null
-    ? new Prisma.Decimal(input.taxRate.toString())
-    : new Prisma.Decimal(0);
+  const qty = toDecimal(input.quantity);
+  const price = toDecimal(input.unitPrice);
+  const rate = toDecimal(input.taxRate);
 
   // lineSubtotal = quantity * unitPrice
   const subtotal = qty.mul(price);
@@ -42,9 +52,9 @@ export function calculateLineTotals(input: ItemCalculationInput): LineItemTotals
   const totalAmount = subtotal.add(taxAmount);
 
   return {
-    subtotal: new Prisma.Decimal(subtotal.toFixed(2)),
-    taxAmount: new Prisma.Decimal(taxAmount.toFixed(2)),
-    totalAmount: new Prisma.Decimal(totalAmount.toFixed(2)),
+    subtotal: subtotal.toDecimalPlaces(2),
+    taxAmount: taxAmount.toDecimalPlaces(2),
+    totalAmount: totalAmount.toDecimalPlaces(2),
   };
 }
 
@@ -52,14 +62,14 @@ export function calculateLineTotals(input: ItemCalculationInput): LineItemTotals
  * Auto-calculates document-level subtotal, total GST tax amount, and final total amount.
  */
 export function calculateDocumentTotals(
-  items: { subtotal: number | Prisma.Decimal; taxAmount: number | Prisma.Decimal }[]
+  items: { subtotal: DecimalValue; taxAmount: DecimalValue }[]
 ): DocumentTotals {
   let docSubtotal = new Prisma.Decimal(0);
   let docTax = new Prisma.Decimal(0);
 
   for (const item of items) {
-    const itemSub = new Prisma.Decimal(item.subtotal.toString());
-    const itemTax = new Prisma.Decimal(item.taxAmount.toString());
+    const itemSub = toDecimal(item.subtotal);
+    const itemTax = toDecimal(item.taxAmount);
 
     docSubtotal = docSubtotal.add(itemSub);
     docTax = docTax.add(itemTax);
@@ -68,9 +78,9 @@ export function calculateDocumentTotals(
   const docTotal = docSubtotal.add(docTax);
 
   return {
-    subtotal: new Prisma.Decimal(docSubtotal.toFixed(2)),
-    taxAmount: new Prisma.Decimal(docTax.toFixed(2)),
-    totalAmount: new Prisma.Decimal(docTotal.toFixed(2)),
+    subtotal: docSubtotal.toDecimalPlaces(2),
+    taxAmount: docTax.toDecimalPlaces(2),
+    totalAmount: docTotal.toDecimalPlaces(2),
   };
 }
 
