@@ -1,15 +1,18 @@
-import { api, downloadFile, toQueryString } from "./api";
+import { api, downloadFile, toQueryString, type ListResult } from "./api";
 import { addDays, formatCurrencyCompact, formatDate, toNumber, toIsoDate } from "./format";
 import type {
   AnalyticsStatsDto,
   AuditLogDto,
+  BackendRole,
   DashboardSummaryDto,
   DashboardTrendPoint,
   InvoiceDto,
+  NotificationDto,
   PurchaseOrderDto,
   QuotationDto,
   ReportsOverviewDto,
   RFQDto,
+  UserListItemDto,
   VendorDto,
   VendorPerformanceDto,
 } from "./types";
@@ -192,9 +195,7 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
 }
 
 export async function fetchRecentPOs(): Promise<RecentPO[]> {
-  const items = await api.get<PurchaseOrderDto[]>(
-    `/purchase-orders${toQueryString({ limit: 5 })}`
-  );
+  const items = await api.get<PurchaseOrderDto[]>(`/purchase-orders${toQueryString({ limit: 5 })}`);
   return items.map((po) => {
     const status: RecentPO["status"] =
       po.status === "DRAFT" ? "Draft" : po.status === "PENDING_APPROVAL" ? "Pending" : "Approved";
@@ -215,9 +216,7 @@ export async function fetchSpendingTrends(): Promise<ChartDataPoint[]> {
 }
 
 export async function fetchVendors(): Promise<Vendor[]> {
-  const items = await api.get<VendorDto[]>(
-    `/vendors${toQueryString({ limit: 100 })}`
-  );
+  const items = await api.get<VendorDto[]>(`/vendors${toQueryString({ limit: 100 })}`);
   return items.map(mapVendor);
 }
 
@@ -290,9 +289,7 @@ export async function updateRfqStatus(id: string, status: string): Promise<RFQDt
 }
 
 export async function fetchQuotations(rfqId?: string): Promise<Quotation[]> {
-  const items = await api.get<QuotationDto[]>(
-    `/quotations${toQueryString({ rfqId, limit: 100 })}`
-  );
+  const items = await api.get<QuotationDto[]>(`/quotations${toQueryString({ rfqId, limit: 100 })}`);
   return items.map(mapQuotation);
 }
 
@@ -393,31 +390,34 @@ export async function markInvoicePaid(id: string): Promise<InvoiceDto> {
   return api.patch<InvoiceDto>(`/invoices/${id}/status`, { status: "PAID" });
 }
 
+export async function fetchActivityLogs(
+  filters: { entityType?: string; page?: number; limit?: number } = {}
+): Promise<ListResult<{ id: string; action: string; entityType: string; description: string; timestamp: string }>> {
+  const result = await api.list<AuditLogDto>(
+    `/audit-logs${toQueryString({ entityType: filters.entityType, page: filters.page, limit: filters.limit ?? 50 })}`
+  );
+  return {
+    items: result.items.map((log) => {
+      const value = log.newValue as { status?: string; totalAmount?: string } | undefined;
+      const amount = value?.totalAmount ? formatCurrencyCompact(value.totalAmount) : "";
+      return {
+        id: log.id,
+        action: log.action,
+        entityType: log.entityType,
+        description: `${log.userEmail ?? "System"} — ${humanizeAction(log.action)}${amount ? ` (${amount})` : ""}`,
+        timestamp: formatDate(log.createdAt),
+      };
+    }),
+    pagination: result.pagination,
+  };
+}
+
 export async function sendInvoiceEmail(id: string): Promise<InvoiceDto> {
   return api.post<InvoiceDto>(`/invoices/${id}/email`);
 }
 
 export async function downloadInvoicePdf(id: string, invoiceNumber: string): Promise<void> {
   return downloadFile(`/invoices/${id}/pdf`, `${invoiceNumber}.pdf`);
-}
-
-export async function fetchActivityLogs(): Promise<
-  { id: string; action: string; entityType: string; description: string; timestamp: string }[]
-> {
-  const items = await api.get<AuditLogDto[]>(
-    `/audit-logs${toQueryString({ limit: 50 })}`
-  );
-  return items.map((log) => {
-    const value = log.newValue as { status?: string; totalAmount?: string } | undefined;
-    const amount = value?.totalAmount ? formatCurrencyCompact(value.totalAmount) : "";
-    return {
-      id: log.id,
-      action: log.action,
-      entityType: log.entityType,
-      description: `${log.userEmail ?? "System"} — ${humanizeAction(log.action)}${amount ? ` (${amount})` : ""}`,
-      timestamp: formatDate(log.createdAt),
-    };
-  });
 }
 
 function humanizeAction(action: string): string {
@@ -470,6 +470,89 @@ export async function registerUser(input: {
   role: "ADMIN" | "PROCUREMENT_OFFICER" | "APPROVER" | "VENDOR";
 }): Promise<{ id: string }> {
   return api.post<{ id: string }>("/auth/register", input);
+}
+
+export const USER_ROLE_LABEL: Record<BackendRole, string> = {
+  ADMIN: "Admin",
+  PROCUREMENT_OFFICER: "Procurement Officer",
+  APPROVER: "Manager/Approver",
+  VENDOR: "Vendor",
+};
+
+export async function forgotPassword(email: string): Promise<null> {
+  return api.post<null>("/auth/forgot-password", { email });
+}
+
+export async function resetPasswordWithOtp(input: {
+  email: string;
+  otp: string;
+  newPassword: string;
+}): Promise<null> {
+  return api.post<null>("/auth/reset-password", input);
+}
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<null> {
+  return api.post<null>("/auth/change-password", { currentPassword, newPassword });
+}
+
+export interface UserListFilters {
+  search?: string;
+  role?: string;
+  isActive?: string;
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+}
+
+export async function fetchUsers(filters: UserListFilters = {}): Promise<ListResult<UserListItemDto>> {
+  return api.list<UserListItemDto>(
+    `/users${toQueryString({ ...filters, limit: filters.limit ?? 10 })}`
+  );
+}
+
+export async function updateUser(
+  id: string,
+  input: { name?: string; phone?: string | null; role?: BackendRole; vendorId?: string | null }
+): Promise<UserListItemDto> {
+  return api.patch<UserListItemDto>(`/users/${id}`, input);
+}
+
+export async function updateUserStatus(id: string, isActive: boolean): Promise<UserListItemDto> {
+  return api.patch<UserListItemDto>(`/users/${id}/status`, { isActive });
+}
+
+export async function resetUserPassword(id: string, newPassword: string): Promise<null> {
+  return api.patch<null>(`/users/${id}/password`, { newPassword });
+}
+
+export async function resendUserInvite(id: string): Promise<null> {
+  return api.post<null>(`/users/${id}/resend-invite`);
+}
+
+export async function deleteUser(id: string): Promise<null> {
+  return api.delete<null>(`/users/${id}`);
+}
+
+export async function fetchNotifications(params: {
+  unread?: boolean;
+  page?: number;
+  limit?: number;
+} = {}): Promise<ListResult<NotificationDto>> {
+  return api.list<NotificationDto>(`/notifications${toQueryString(params)}`);
+}
+
+export async function fetchUnreadNotificationCount(): Promise<number> {
+  const data = await api.get<{ unreadCount: number }>("/notifications/unread-count");
+  return data.unreadCount;
+}
+
+export async function markNotificationRead(id: string): Promise<null> {
+  return api.patch<null>(`/notifications/${id}/read`);
+}
+
+export async function markAllNotificationsRead(): Promise<null> {
+  return api.patch<null>("/notifications/read-all");
 }
 
 export { addDays };

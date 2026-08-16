@@ -57,7 +57,7 @@ export function clearTokens(): void {
   window.localStorage.removeItem(REFRESH_TOKEN_KEY);
 }
 
-async function parseEnvelope<T>(response: Response): Promise<T> {
+async function parseEnvelope<T>(response: Response): Promise<ApiSuccess<T>> {
   let body: ApiEnvelope<T> | null = null;
 
   try {
@@ -75,7 +75,7 @@ async function parseEnvelope<T>(response: Response): Promise<T> {
     );
   }
 
-  return body.data;
+  return body;
 }
 
 async function refreshAccessToken(): Promise<boolean> {
@@ -113,7 +113,12 @@ function redirectToLogin(): void {
   }
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+export interface ListResult<T> {
+  items: T[];
+  pagination: PaginationMeta;
+}
+
+export async function requestEnvelope<T>(path: string, options: RequestInit = {}): Promise<ApiSuccess<T>> {
   const url = `${API_BASE}${API_PREFIX}${path}`;
 
   const buildOptions = (): RequestInit => {
@@ -144,6 +149,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return parseEnvelope<T>(response);
 }
 
+export async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  return (await requestEnvelope<T>(path, options)).data;
+}
+
 export const api = {
   get<T>(path: string): Promise<T> {
     return request<T>(path, { method: "GET" });
@@ -159,6 +168,22 @@ export const api = {
   },
   delete<T>(path: string): Promise<T> {
     return request<T>(path, { method: "DELETE" });
+  },
+  list<T>(path: string): Promise<ListResult<T>> {
+    return (async () => {
+      const envelope = await requestEnvelope<T[]>(path, { method: "GET" });
+      const data = envelope.data as T[] | { items: T[] } | null | undefined;
+      const items = Array.isArray(data) ? data : data?.items ?? [];
+      return {
+        items,
+        pagination: envelope.pagination ?? {
+          page: 1,
+          limit: items.length,
+          totalItems: items.length,
+          totalPages: items.length > 0 ? 1 : 0,
+        },
+      };
+    })();
   },
 };
 

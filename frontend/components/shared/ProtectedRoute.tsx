@@ -4,7 +4,12 @@ import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/AuthContext";
 
-export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+  allowedRoles?: string[];
+}
+
+export default function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
   const router = useRouter();
 
@@ -13,6 +18,16 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
       router.push("/login");
     }
   }, [user, loading, router]);
+
+  useEffect(() => {
+    if (!loading && user && allowedRoles && !allowedRoles.includes(user.role)) {
+      router.replace("/dashboard");
+    }
+  }, [user, loading, allowedRoles, router]);
+
+  if (user && allowedRoles && !allowedRoles.includes(user.role)) {
+    return null;
+  }
 
   if (loading) {
     return (
