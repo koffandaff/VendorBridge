@@ -7,12 +7,11 @@ export const requestLoggerMiddleware: RequestHandler = (req, res, next) => {
 
   res.on("finish", () => {
     logger.info("http request", {
-      requestId: req.requestId,
+      requestId: req.headers["x-request-id"] || undefined,
       method: req.method,
       path: req.originalUrl,
       statusCode: res.statusCode,
       durationMs: Math.round(performance.now() - startedAt),
-      userId: req.user?.id,
     });
   });
 
