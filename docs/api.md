@@ -55,6 +55,18 @@ Full documentation (flows, token/OTP design, security notes, env vars, demo acco
 - Headers/interceptors must refresh before the access token expires: call
   `POST /auth/refresh` with the current refresh token and replace both tokens on success.
 
+### Users & Managers (`/api/v1/users`)
+
+| Method   | Path                       | Description                                                     |
+| -------- | -------------------------- | --------------------------------------------------------------- |
+| `POST`   | `/api/v1/users`            | Create manager/user account (ADMIN, PROCUREMENT_OFFICER, APPROVER, VENDOR) |
+| `GET`    | `/api/v1/users`            | List users/managers (filter by role, isActive, search, pagination) |
+| `GET`    | `/api/v1/users/:id`        | Get user details by ID (sanitized, excludes passwordHash)        |
+| `PUT`    | `/api/v1/users/:id`        | Update user/manager profile                                     |
+| `PATCH`  | `/api/v1/users/:id/status`  | Activate or deactivate user (`isActive = true/false`)           |
+| `PATCH`  | `/api/v1/users/:id/password`| Reset user password (bcrypt hashed)                             |
+| `DELETE` | `/api/v1/users/:id`        | Safe soft-delete user (sets `isActive = false`)                 |
+
 ### Vendor Categories (`/api/v1/vendors/categories`)
 
 | Method   | Path                         | Description                                      |
