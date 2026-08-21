@@ -34,6 +34,17 @@ app.use(
 );
 app.use(express.json({ limit: BODY_LIMIT }));
 
+// Root endpoint
+app.get("/", (_req, res) => {
+  res.json({
+    status: "ok",
+    service: "VendorBridge API",
+    version: "1.0.0",
+    health: "/health",
+    apiPrefix: API_PREFIX,
+  });
+});
+
 // Health Check Endpoint (backend/rules.md §23)
 app.get("/health", async (_req, res) => {
   let database = "up";
