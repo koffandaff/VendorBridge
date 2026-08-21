@@ -1,5 +1,5 @@
 import { Router } from "express";
-import type { Request } from "express";
+import type { Request, Response } from "express";
 import rateLimit, { type RateLimitRequestHandler } from "express-rate-limit";
 
 interface RateLimitedRequest extends Request {
@@ -29,12 +29,12 @@ import {
 const router = Router();
 
 function createLimiter(max: number): RateLimitRequestHandler {
-  return rateLimit({
+  return (rateLimit as any)({
     windowMs: RATE_LIMIT_WINDOW_MS,
     limit: max,
     standardHeaders: "draft-8",
     legacyHeaders: false,
-    handler: (req, res) => {
+    handler: (req: Request, res: Response) => {
       const retryAfterMs = (req as RateLimitedRequest).rateLimit.resetTime.getTime() - Date.now();
       res.setHeader("Retry-After", String(Math.max(1, Math.ceil(retryAfterMs / 1000))));
       res.status(429).json({
