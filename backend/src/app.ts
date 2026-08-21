@@ -25,7 +25,7 @@ export const app = express();
 app.disable("x-powered-by");
 
 // Baseline security & middleware setup (backend/rules.md §6)
-app.use(helmet());
+app.use((helmet as any)());
 app.use(requestIdMiddleware);
 app.use(requestLoggerMiddleware);
 app.use(
