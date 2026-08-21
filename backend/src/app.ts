@@ -1,7 +1,6 @@
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
-import * as helmetModule from "helmet";
 import "./config/env.js";
 import { API_PREFIX, BODY_LIMIT } from "./config/constants.js";
 import { corsOrigins } from "./config/env.js";
@@ -26,8 +25,7 @@ export const app = express();
 app.disable("x-powered-by");
 
 // Baseline security & middleware setup (backend/rules.md §6)
-const helmetMiddleware = (helmetModule as { default?: typeof helmet }).default ?? helmet;
-app.use(helmetMiddleware());
+app.use(helmet());
 app.use(requestIdMiddleware);
 app.use(requestLoggerMiddleware);
 app.use(
