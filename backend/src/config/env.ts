@@ -40,14 +40,6 @@ const envSchema = z
         message: "SMTP_HOST and SMTP_PORT must be configured together",
       });
     }
-
-    if (data.NODE_ENV === "production" && !smtpHostSet) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["SMTP_HOST"],
-        message: "SMTP is required in production",
-      });
-    }
   });
 
 const result = envSchema.safeParse(process.env);

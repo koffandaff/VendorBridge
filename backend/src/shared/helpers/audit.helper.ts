@@ -23,7 +23,7 @@ export async function recordAudit(input: RecordAuditInput): Promise<void> {
       newValue: input.newValue,
       metadata: input.metadata,
       ipAddress: input.ipAddress ?? null,
-      ...(input.userId ? { userId: input.userId } : {}),
+      userId: input.userId ?? null,
     };
     await prisma.auditLog.create({ data });
   } catch (error) {
