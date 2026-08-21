@@ -15,7 +15,8 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:push": "prisma db push",
     "prisma:studio": "prisma studio",
-    "prisma:seed": "prisma db seed"
+    "prisma:seed": "prisma db seed",
+    "vercel-build": "prisma generate && tsc -p tsconfig.json"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
