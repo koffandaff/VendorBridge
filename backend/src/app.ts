@@ -79,3 +79,5 @@ app.use((_req, _res, next) => {
 
 // Centralized Error Handling Middleware (backend/rules.md §7)
 app.use(errorMiddleware);
+
+export default app;
